@@ -89,12 +89,14 @@ public class MapGraphGizmosDebugger : MonoBehaviour
         var view = mapSystem.DebugView;
         int revealDepth = (view != null) ? view.RevealedMaxDepth : int.MaxValue;
 
-        // 1) Edge 먼저 그리기
+        
+        // 1) Node 그리기
+        DrawNodes(graph, revealDepth);
+        
+        // 2) Edge 먼저 그리기
         DrawEdges(view);
 
 
-        // 2) Node 그리기
-        DrawNodes(graph, revealDepth);
 
 #if UNITY_EDITOR
         if (view != null && drawNodeLabels)
@@ -115,8 +117,7 @@ public class MapGraphGizmosDebugger : MonoBehaviour
                 continue;
             if (!cachedPositions.TryGetValue(e.ToId, out Vector3 to))
                 continue;
-
-            // Stage별로 색감을 주고 싶을 수 있지만, 여기서는 단순하게 흰색 유지
+            
             Gizmos.color = Color.white;
             Gizmos.DrawLine(from, to);
 

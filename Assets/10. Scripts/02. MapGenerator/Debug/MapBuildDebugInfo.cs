@@ -4,7 +4,8 @@ using System.Collections.Generic;
 public class MapBuildDebugInfo
 {
     public int MapId { get; }
-    public int Seed { get; }
+    public int BaseSeed { get; }
+    public int UsedSeed { get; }
     public int TotalDepth { get; }
 
     public Dictionary<int, List<int>> DepthNodes { get; } = new Dictionary<int, List<int>>();
@@ -39,10 +40,11 @@ public class MapBuildDebugInfo
         ExtraEdge_Skip,
     }
 
-    public MapBuildDebugInfo(int mapId, int seed, int totalDepth)
+    public MapBuildDebugInfo(int mapId, int baseSeed, int usedSeed, int totalDepth)
     {
         MapId = mapId;
-        Seed = seed;
+        BaseSeed = baseSeed;
+        UsedSeed = usedSeed;
         TotalDepth = totalDepth;
     }
     

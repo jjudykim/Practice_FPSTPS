@@ -246,6 +246,50 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &258694114
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 258694116}
+  - component: {fileID: 258694115}
+  m_Layer: 0
+  m_Name: MapListManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &258694115
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 258694114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5838ba277d148a39f2bac22e13d0b89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MapListManager
+--- !u!4 &258694116
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 258694114}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.77917, y: -6.16011, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &402112308
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -429,16 +473,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapSystem
   totalDepth: 5
-  minNodesPerDepth: 1
-  maxNodesPerDepth: 4
+  minNodesPerDepth: 2
+  maxNodesPerDepth: 3
   minOutDegree: 1
-  maxOutDegree: 4
-  crossChance: 0.2
+  maxOutDegree: 2
+  crossChance: 0.25
   maxRetries: 20
-  rewardRatio: 0.2
+  rewardRatio: 0.1
   rewardCooldownDepth: 2
-  shopRatio: 0.2
+  shopRatio: 0.1
   shopCooldownDepth: 2
+  mapListManager: {fileID: 258694115}
+  debugBuild: 1
+  stepDelaySeconds: 0.35
 --- !u!4 &893827245
 Transform:
   m_ObjectHideFlags: 0
@@ -652,6 +699,55 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2990f4bba75a13f498b2b1e7b72bad4c, type: 3}
+--- !u!1 &1270891206
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1270891208}
+  - component: {fileID: 1270891207}
+  m_Layer: 0
+  m_Name: MapSaveTestRunner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1270891207
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1270891206}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf825622a3f245729f2be71eb0b2757f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MapSaveTestRunner
+  mapSystem: {fileID: 893827244}
+  mapListManager: {fileID: 258694115}
+  mapSeedForTest: 1
+  saveKey: 115
+  loadRandomFromListKey: 108
+--- !u!4 &1270891208
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1270891206}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1739153033
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -743,11 +839,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   mapSystem: {fileID: 893827244}
+  mapSaveTestRunner: {fileID: 0}
+  rebuildKey: 114
+  fixedKey: 102
+  newRandomSeedSessionKey: 116
   mapId: 1
   useFixedSeedForDebug: 1
   seed: 12345
-  rebuildKey: 114
-  fixedKey: 102
 --- !u!4 &1988848789
 Transform:
   m_ObjectHideFlags: 0
@@ -797,6 +895,7 @@ MonoBehaviour:
   nodeSpacingX: 2
   nodeRadius: 0.25
   drawNodeLabels: 1
+  drawEdgeScoreLabels: 1
 --- !u!4 &2080409947
 Transform:
   m_ObjectHideFlags: 0
@@ -826,3 +925,5 @@ SceneRoots:
   - {fileID: 1988848789}
   - {fileID: 893827245}
   - {fileID: 2080409947}
+  - {fileID: 1270891208}
+  - {fileID: 258694116}

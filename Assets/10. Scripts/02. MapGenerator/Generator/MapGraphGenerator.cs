@@ -47,22 +47,24 @@ public class MapGraphGenerator : IMapGenerator
     {
         ValidateRequestOrThrow(request);
 
+        int baseSeed = request.Seed;
+
         for (int attempt = 0; attempt <= request.MaxRetries; attempt++)
         {
             int attemptSeed = unchecked(request.Seed + attempt * PRIME);
-            MapGraph graph = InternalBuild(request, attemptSeed);
+            MapGraph graph = InternalBuild(request, baseSeed, attemptSeed);
 
             if (ValidateGraph(graph, request.TotalDepth))
-                return new MapContext(request.MapId, request.Seed, graph);
+                return new MapContext(request.MapId, baseSeed, attemptSeed, graph);
         }
 
         throw new InvalidOperationException("Failed to generate valid map.");
     }
 
-    private MapGraph InternalBuild(MapBuildRequest req, int seed)
+    private MapGraph InternalBuild(MapBuildRequest req, int baseSeed, int usedSeed)
     {
-        Random rng = new Random(seed);
-        LastDebugInfo = new MapBuildDebugInfo(req.MapId, req.Seed, req.TotalDepth);
+        Random rng = new Random(usedSeed);
+        LastDebugInfo = new MapBuildDebugInfo(req.MapId, baseSeed, usedSeed, req.TotalDepth);
 
         // 1) Depth 별 노드를 먼저 전부 생성
         var nodes = CreateNodes(req, rng);

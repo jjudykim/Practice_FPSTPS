@@ -1,36 +1,53 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Dynamic;
-using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class MapSystem : MonoBehaviour
 {
-    [Header("Graph Settings")]
-    [SerializeField] private int totalDepth = 9;
+    [Header("Graph Settings")] 
+    [SerializeField] private int totalDepth = 5;
     [SerializeField] private int minNodesPerDepth = 2;
     [SerializeField] private int maxNodesPerDepth = 3;
+
+    public int TotalDepth => totalDepth;
+    public int MinNodesPerDepth => minNodesPerDepth;
+    public int MaxNodesPerDepth => maxNodesPerDepth;
     
-    [Header("Connection Settings")]
-    [SerializeField] private int minOutDegree = 1;
-    [SerializeField] private int maxOutDegree = 2;
-    [Range(0f, 1f)]
-    [SerializeField] private float crossChance = 0.25f;
-    [SerializeField] private int maxRetries = 20;
+    [Header("Connection Settings")] 
+    [SerializeField] public int minOutDegree = 1;
+    [SerializeField] public int maxOutDegree = 2;
+    public int MinOutDegree => minOutDegree;
+    public int MaxOutDegree => maxOutDegree;
+    
+    [Range(0f, 1f)] 
+    [SerializeField] public float crossChance = 0.25f;
+    [SerializeField] public int maxRetries = 20;
+    public float CrossChance => crossChance;
+    public int MaxRetries => maxRetries;
     
     [Header("Special Room Settings")]
     [Range(0f, 1f)]
-    [SerializeField] private float rewardRatio = 0.1f;
-    [SerializeField] private int rewardCooldownDepth = 2;
+    [SerializeField] public float rewardRatio = 0.1f;
+    [SerializeField] public int rewardCooldownDepth = 2;
+    public float RewardRatio => rewardRatio;
+    public int RewardCooldownDepth => rewardCooldownDepth;
     
-    [Range(0f, 1f)]
-    [SerializeField] private float shopRatio = 0.1f;
-    [SerializeField] private int shopCooldownDepth = 2;
+    [Range(0f, 1f)] 
+    [SerializeField] public float shopRatio = 0.1f;
+    [SerializeField] public int shopCooldownDepth = 2;
+    public float ShopRatio => shopRatio;
+    public int ShopCooldownDepth => shopCooldownDepth;
+    
+    [Header("MapList Build (Optional)")]
+    [SerializeField] private MapListManager mapListManager;
     
     [Header("Debug Build Visualization")]
     [SerializeField] private bool debugBuild = true;
     [SerializeField] private float stepDelaySeconds = 0.35f;
+    public bool DebugBuild => debugBuild;
+    public float StepDelaySeconds => stepDelaySeconds;
     
     [Serializable]
     public class MapBuildDebugView
@@ -49,7 +66,6 @@ public class MapSystem : MonoBehaviour
         {
             if (ctx == null || DebugInfo == null)
                 return;
-
             RevealedMaxDepth = DebugInfo.TotalDepth - 1;
 
             RevealedEdges.Clear();
@@ -94,6 +110,70 @@ public class MapSystem : MonoBehaviour
         OnMapBuilt?.Invoke(CurrentMap);
     }
 
+    public void BuildFromMapList(int seed)
+    {
+        if (mapListManager == null)
+        {
+            Debug.LogError("[MapSystem] MapListManager is null.");
+            return;
+        }
+        
+        StopAllCoroutines();
+        StartCoroutine(Co_BuildFromMapList(seed));
+    }
+
+    private IEnumerator Co_BuildFromMapList(int seed)
+    {
+        bool ok = false;
+        MapData preset = null;
+
+        yield return mapListManager.PickRandomPreset((success, p) =>
+        {
+            ok = success;
+            preset = p;
+        });
+
+        if (ok == false || preset == null)
+        {
+            Debug.LogError("[MapSystem] BuildFromMapList failed: preset load error.");
+            yield break;
+        }
+        
+        ClearCurrentMap();
+        ResetDebugView();
+
+        MapBuildRequest request = preset.Request.ToRequest();
+        CurrentMap = generator.Generate(request);
+        
+        if (generator is MapGraphGenerator mg)
+            DebugView.DebugInfo = mg.LastDebugInfo;
+        
+        DebugView.RevealAll(CurrentMap);
+        OnMapBuilt?.Invoke(CurrentMap);
+    }
+
+    public void BuildFromRequest(MapBuildRequest request, bool debugStepReveal = false)
+    {
+        if (request == null)
+            throw new ArgumentNullException(nameof(request));
+        
+        StopAllCoroutines();
+        ClearCurrentMap();
+        ResetDebugView();
+
+        CurrentMap = generator.Generate(request);
+        
+        if (generator is MapGraphGenerator mg)
+            DebugView.DebugInfo = mg.LastDebugInfo;
+        
+        OnMapBuilt?.Invoke(CurrentMap);
+        
+        if (debugStepReveal && debugBuild)
+            StartCoroutine(Co_RevealBuildSteps(stepDelaySeconds));
+        else
+            DebugView.RevealAll(CurrentMap);
+    }
+
     public void BuildDebug(int mapId, int seed)
     {
         StopAllCoroutines();
@@ -117,10 +197,10 @@ public class MapSystem : MonoBehaviour
     private MapBuildRequest BuildRequest(int mapId, int seed)
     {
         return new MapBuildRequest.Builder(mapId, seed)
-            .SetGraphSize(totalDepth, minNodesPerDepth, maxNodesPerDepth)
+            .SetGraphSize(TotalDepth, minNodesPerDepth, maxNodesPerDepth)
             .SetConnectionRules(minOutDegree, maxOutDegree, crossChance, maxRetries)
-            .SetRewardRules(rewardRatio, rewardCooldownDepth, 2, totalDepth - 2)
-            .SetShopRules(shopRatio, shopCooldownDepth, 2, totalDepth - 2)
+            .SetRewardRules(rewardRatio, rewardCooldownDepth, 2, TotalDepth - 2)
+            .SetShopRules(shopRatio, shopCooldownDepth, 2, TotalDepth - 2)
             .Build();
     }
 

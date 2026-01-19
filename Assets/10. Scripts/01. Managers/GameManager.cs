@@ -1,27 +1,34 @@
+using System.Collections;
+using System.IO;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
     [SerializeField] private MapSystem mapSystem;
+    [SerializeField] private MapSaveTestRunner mapSaveTestRunner;
+
+    [Header("Debug HotKeys")] 
+    [SerializeField] private KeyCode rebuildKey = KeyCode.R;
+    [SerializeField] private KeyCode fixedKey = KeyCode.F;
+
+    [Header("Session Hotkey (Delegated To Runner")] 
+    [SerializeField] private KeyCode newRandomSeedSessionKey = KeyCode.T;
     
     [Header("Build Request (Default)")]
     [SerializeField] private int mapId = 1;
     
     [Tooltip("true : 아래 seed 그대로 사용 / false : 실행시마다 랜덤 seed")]
     [SerializeField] private bool useFixedSeedForDebug = true;
-    
     [SerializeField] private int seed = 12345;
-
-    [Header("Debug HotKeys")] 
-    [SerializeField] private KeyCode rebuildKey = KeyCode.R;
-    [SerializeField] private KeyCode fixedKey = KeyCode.F;
-    
 
     private void Awake()
     {
         if (mapSystem == null)
-            mapSystem = FindObjectOfType<MapSystem>();
+            mapSystem = FindFirstObjectByType<MapSystem>();
 
+        if (mapSaveTestRunner == null)
+            mapSaveTestRunner = FindFirstObjectByType<MapSaveTestRunner>();
+        
         mapSystem.OnMapBuilt += HandleMapBuilt;
     }
     
@@ -41,6 +48,11 @@ public class GameManager : MonoBehaviour
         if (Input.GetKeyDown(fixedKey))
         {
             useFixedSeedForDebug = !useFixedSeedForDebug;
+        }
+
+        if (Input.GetKeyDown(newRandomSeedSessionKey))
+        {
+            mapSaveTestRunner.BuildRandomFromSeedCache();
         }
     }
 
