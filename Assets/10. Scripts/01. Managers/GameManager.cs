@@ -6,6 +6,7 @@ public class GameManager : MonoBehaviour
 {
     [SerializeField] private MapSystem mapSystem;
     [SerializeField] private MapSaveTestRunner mapSaveTestRunner;
+    [SerializeField] private MapUIController mapUI;
 
     [Header("Debug HotKeys")] 
     [SerializeField] private KeyCode rebuildKey = KeyCode.R;
@@ -53,6 +54,7 @@ public class GameManager : MonoBehaviour
         if (Input.GetKeyDown(newRandomSeedSessionKey))
         {
             mapSaveTestRunner.BuildRandomFromSeedCache();
+            mapUI.Toggle(mapSystem.CurrentMap.Graph);
         }
     }
 
