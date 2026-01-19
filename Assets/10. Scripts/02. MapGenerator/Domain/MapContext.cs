@@ -1,5 +1,3 @@
-using UnityEditor.Rendering;
-
 public class MapContext
 {
     public int MapId { get; }

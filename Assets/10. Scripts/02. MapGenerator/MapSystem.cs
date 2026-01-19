@@ -109,91 +109,7 @@ public class MapSystem : MonoBehaviour
         
         OnMapBuilt?.Invoke(CurrentMap);
     }
-
-    public void BuildFromMapList(int seed)
-    {
-        if (mapListManager == null)
-        {
-            Debug.LogError("[MapSystem] MapListManager is null.");
-            return;
-        }
-        
-        StopAllCoroutines();
-        StartCoroutine(Co_BuildFromMapList(seed));
-    }
-
-    private IEnumerator Co_BuildFromMapList(int seed)
-    {
-        bool ok = false;
-        MapData preset = null;
-
-        yield return mapListManager.PickRandomPreset((success, p) =>
-        {
-            ok = success;
-            preset = p;
-        });
-
-        if (ok == false || preset == null)
-        {
-            Debug.LogError("[MapSystem] BuildFromMapList failed: preset load error.");
-            yield break;
-        }
-        
-        ClearCurrentMap();
-        ResetDebugView();
-
-        MapBuildRequest request = preset.Request.ToRequest();
-        CurrentMap = generator.Generate(request);
-        
-        if (generator is MapGraphGenerator mg)
-            DebugView.DebugInfo = mg.LastDebugInfo;
-        
-        DebugView.RevealAll(CurrentMap);
-        OnMapBuilt?.Invoke(CurrentMap);
-    }
-
-    public void BuildFromRequest(MapBuildRequest request, bool debugStepReveal = false)
-    {
-        if (request == null)
-            throw new ArgumentNullException(nameof(request));
-        
-        StopAllCoroutines();
-        ClearCurrentMap();
-        ResetDebugView();
-
-        CurrentMap = generator.Generate(request);
-        
-        if (generator is MapGraphGenerator mg)
-            DebugView.DebugInfo = mg.LastDebugInfo;
-        
-        OnMapBuilt?.Invoke(CurrentMap);
-        
-        if (debugStepReveal && debugBuild)
-            StartCoroutine(Co_RevealBuildSteps(stepDelaySeconds));
-        else
-            DebugView.RevealAll(CurrentMap);
-    }
-
-    public void BuildDebug(int mapId, int seed)
-    {
-        StopAllCoroutines();
-        ClearCurrentMap();
-        ResetDebugView();
-
-        MapBuildRequest request = BuildRequest(mapId, seed);
-        CurrentMap = generator.Generate(request);
-
-        if (generator is MapGraphGenerator mg)
-            DebugView.DebugInfo = mg.LastDebugInfo;
-        
-        OnMapBuilt?.Invoke(CurrentMap);
-
-        if (debugBuild)
-            StartCoroutine(Co_RevealBuildSteps(stepDelaySeconds));
-        else
-            DebugView.RevealAll(CurrentMap);
-    }
-
+    
     private MapBuildRequest BuildRequest(int mapId, int seed)
     {
         return new MapBuildRequest.Builder(mapId, seed)
@@ -203,38 +119,7 @@ public class MapSystem : MonoBehaviour
             .SetShopRules(shopRatio, shopCooldownDepth, 2, TotalDepth - 2)
             .Build();
     }
-
-    private IEnumerator Co_RevealBuildSteps(float delay)
-    {
-        if (CurrentMap == null || DebugView.DebugInfo == null)
-            yield break;
-        
-        // 1) Depth별 노드 공개
-        for (int d = 0; d < DebugView.DebugInfo.TotalDepth; d++)
-        {
-            DebugView.RevealedMaxDepth = d;
-            DebugView.CurrentStageLabel = $"Reveal Depth {d}";
-            yield return new WaitForSeconds(delay);
-        }
-
-        // 2) MainPath 간선 공개(순서대로)
-        DebugView.CurrentStageLabel = "MainPath Edges";
-        foreach (var e in DebugView.DebugInfo.MainPathEdges)
-        {
-            DebugView.RevealedEdges.Add(e);
-            yield return new WaitForSeconds(delay);
-        }
-
-        // 3) Extra 간선 공개(스코어 포함)
-        DebugView.CurrentStageLabel = $"Extra Edges (Budget {DebugView.DebugInfo.ExtraBudgetTotal})";
-        foreach (var e in DebugView.DebugInfo.ExtraEdges)
-        {
-            DebugView.RevealedEdges.Add(e);
-            yield return new WaitForSeconds(delay);
-        }
-
-        DebugView.CurrentStageLabel = "Done";
-    }
+    
 
     private void ResetDebugView()
     {
