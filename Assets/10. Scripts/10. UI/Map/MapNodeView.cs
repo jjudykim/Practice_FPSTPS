@@ -5,9 +5,12 @@ using UnityEngine.UI;
 
 public class MapNodeView : MonoBehaviour
 {
-    [Header("Modern UI Pack")]
-    [SerializeField] private ButtonManager buttonManager;
-    
+    [Header("Modern UI Pack")] [SerializeField]
+    private ButtonManager buttonManager;
+
+    [Header("Raycast Targets (assign if needed)")] [SerializeField]
+    private Graphic[] raycastTargets;
+
     public int NodeId { get; private set; }
     public int Depth { get; private set; }
 
@@ -18,17 +21,28 @@ public class MapNodeView : MonoBehaviour
     private Image highlightImg;
     private Image disabledImg;
 
+    private Color baseColor = Color.gray;
+
+    [SerializeField] private float currentNormalBoost = 1.25f;
+
+    public enum NodeUIState
+    {
+        Normal,
+        Current,
+        Available,
+        Cleared,
+        Locked
+    }
+
     private struct NodeStyle
     {
         public string label;
         public Color color;
-        public bool interactable;
 
-        public NodeStyle(string label, Color color, bool interactable)
+        public NodeStyle(string label, Color color)
         {
             this.label = label;
             this.color = color;
-            this.interactable = interactable;
         }
     }
 
@@ -46,7 +60,7 @@ public class MapNodeView : MonoBehaviour
         this.onClicked = onClick;
 
         ResolveVisualImages();
-        
+
         ApplyStyleByType(node);
         HookClickEventOnce();
     }
@@ -68,7 +82,7 @@ public class MapNodeView : MonoBehaviour
             Debug.LogError("[MapNodeView] ::: ButtonManager is null");
             return;
         }
-        
+
         buttonManager.onClick.RemoveListener(HandleClick);
         buttonManager.onClick.AddListener(HandleClick);
     }
@@ -83,7 +97,7 @@ public class MapNodeView : MonoBehaviour
     {
         onClicked?.Invoke(NodeId);
     }
-    
+
     private void ApplyStyleByType(MapNode node)
     {
         if (buttonManager == null)
@@ -91,28 +105,107 @@ public class MapNodeView : MonoBehaviour
 
         NodeStyle style = GetNodeStyle(node);
 
-        Color c = style.color;
-        normalImg.color = new Color(c.r, c.g, c.b, c.a * 0.7f);
-        highlightImg.color = c;
-        disabledImg.color = new Color(c.r, c.g, c.b, c.a * 0.3f);
+        baseColor = style.color;
         buttonManager.SetText(style.label);
-        buttonManager.Interactable(style.interactable);
+
+        ApplyState(NodeUIState.Normal);
     }
 
     private NodeStyle GetNodeStyle(MapNode node)
     {
         switch (node.Type)
         {
-            case NodeType.Start:
-                return new NodeStyle("START", Color.cyan, true);
-            case NodeType.Boss:
-                return new NodeStyle("BOSS", Color.red, true);
-            case NodeType.Reward:
-                return new NodeStyle("REWARD", Color.yellow, true);
-            case NodeType.Shop:
-                return new NodeStyle("SHOP", Color.green, true);
+            case NodeType.Start: return new NodeStyle("START", Color.cyan);
+            case NodeType.Boss: return new NodeStyle("BOSS", Color.red);
+            case NodeType.Reward: return new NodeStyle("REWARD", Color.yellow);
+            case NodeType.Shop: return new NodeStyle("SHOP", Color.green);
+            default: return new NodeStyle(node.Type.ToString().ToUpper(), Color.gray);
+        }
+    }
+
+    private Color GetStateColor(NodeUIState state)
+    {
+        switch (state)
+        {
+            case NodeUIState.Current:
+                return Color.Lerp(baseColor, Color.darkBlue, 0.55f);
+            case NodeUIState.Available:
+                return Color.Lerp(baseColor, Color.white, 0.25f);
+            case NodeUIState.Cleared:
+                return Color.Lerp(baseColor, Color.gray, 0.55f);
+            case NodeUIState.Locked:
+                return Color.Lerp(baseColor, Color.black, 0.55f);
+            case NodeUIState.Normal:
             default:
-                return new NodeStyle(node.Type.ToString().ToUpper(), Color.gray, true);
+                return baseColor;
+        }
+    }
+
+
+    public void ApplyState(NodeUIState state)
+    {
+        if (buttonManager == null || normalImg == null || highlightImg == null || disabledImg == null)
+            return;
+
+        float normalAlpha = 0.7f;
+        float highlightAlpha = 1.0f;
+        float disabledAlpha = 0.3f;
+
+        bool interactable = true;
+
+        switch (state)
+        {
+            case NodeUIState.Current:
+                interactable = false;
+                normalAlpha = 0.85f;
+                highlightAlpha = 1.00f;
+                disabledAlpha = 0.35f;
+                break;
+            case NodeUIState.Available:
+                interactable = true;
+                normalAlpha = 0.80f;
+                highlightAlpha = 1.00f;
+                disabledAlpha = 0.35f;
+                break;
+            case NodeUIState.Cleared:
+                interactable = true;
+                normalAlpha = 0.65f;
+                highlightAlpha = 0.85f;
+                disabledAlpha = 0.25f;
+                break;
+            case NodeUIState.Locked:
+                interactable = false;
+                normalAlpha = 0.25f;
+                highlightAlpha = 0.25f;
+                disabledAlpha = 0.20f;
+                break;
+            case NodeUIState.Normal:
+            default:
+                interactable = true;
+                break;
+        }
+
+        Color stateColor = GetStateColor(state);
+        
+        normalImg.color = new Color(stateColor.r, stateColor.g, stateColor.b, normalAlpha);
+        highlightImg.color = new Color(stateColor.r, stateColor.g, stateColor.b, highlightAlpha);
+        disabledImg.color = new Color(stateColor.r, stateColor.g, stateColor.b, disabledAlpha);
+        
+        buttonManager.Interactable(interactable);
+        buttonManager.UpdateUI();
+    }
+
+    public void SetRaycastBlock(bool block)
+    {
+        if (raycastTargets == null || raycastTargets.Length == 0)
+            raycastTargets = GetComponentsInChildren<Graphic>(true);
+        
+        for (int i = 0; i < raycastTargets.Length; ++i)
+        {
+            if (raycastTargets[i] == null)
+                continue;
+            
+            raycastTargets[i].raycastTarget = block;
         }
     }
 }

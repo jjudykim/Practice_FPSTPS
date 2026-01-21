@@ -101,7 +101,7 @@ public class MapSystem : MonoBehaviour
 
         MapBuildRequest request = BuildRequest(mapId, seed);
         CurrentMap = generator.Generate(request);
-
+        
         if (generator is MapGraphGenerator mg)
             DebugView.DebugInfo = mg.LastDebugInfo;
 

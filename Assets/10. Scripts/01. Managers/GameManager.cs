@@ -1,90 +1,54 @@
+using System;
 using System.Collections;
 using System.IO;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
-public class GameManager : MonoBehaviour
+public class GameManager : SingletonBase<GameManager>
 {
-    [SerializeField] private MapSystem mapSystem;
-    [SerializeField] private MapSaveTestRunner mapSaveTestRunner;
-    [SerializeField] private MapUIController mapUI;
-
-    [Header("Debug HotKeys")] 
-    [SerializeField] private KeyCode rebuildKey = KeyCode.R;
-    [SerializeField] private KeyCode fixedKey = KeyCode.F;
-
-    [Header("Session Hotkey (Delegated To Runner")] 
-    [SerializeField] private KeyCode newRandomSeedSessionKey = KeyCode.T;
+    public MapRunCache MapCache { get; private set; } = new MapRunCache();
+    public bool HasActiveMap => MapCache != null && MapCache.HasGraph;
     
-    [Header("Build Request (Default)")]
-    [SerializeField] private int mapId = 1;
-    
-    [Tooltip("true : 아래 seed 그대로 사용 / false : 실행시마다 랜덤 seed")]
-    [SerializeField] private bool useFixedSeedForDebug = true;
-    [SerializeField] private int seed = 12345;
-
-    private void Awake()
+    protected override void Awake()
     {
-        if (mapSystem == null)
-            mapSystem = FindFirstObjectByType<MapSystem>();
-
-        if (mapSaveTestRunner == null)
-            mapSaveTestRunner = FindFirstObjectByType<MapSaveTestRunner>();
+        base.Awake();
         
-        mapSystem.OnMapBuilt += HandleMapBuilt;
-    }
-    
-    private void OnDestroy()
-    {
-        if (mapSystem != null)
-            mapSystem.OnMapBuilt -= HandleMapBuilt;
+        if (MapCache == null)
+            MapCache = new MapRunCache();
     }
 
-    private void Update()
+    public void SetCurrentMap(MapGraph graph, int usedSeed, int startNodeId = -1)
     {
-        if (Input.GetKeyDown(rebuildKey))
+        if (graph == null)
         {
-            StartNewSession();
+            Debug.LogError("[GameManager] ::: SetCurrentMap failed: graph is null");
+            return;
         }
+        
+        MapCache.SetGraph(graph, usedSeed);
 
-        if (Input.GetKeyDown(fixedKey))
-        {
-            useFixedSeedForDebug = !useFixedSeedForDebug;
-        }
-
-        if (Input.GetKeyDown(newRandomSeedSessionKey))
-        {
-            mapSaveTestRunner.BuildRandomFromSeedCache();
-            mapUI.Toggle(mapSystem.CurrentMap.Graph);
-        }
+        //if (startNodeId >= 0)
+        //    MapCache.SetCurrentNode(startNodeId);
+        //else
+        //    MapCache.TrySetCurrentNodeToStartIfNeeded();
+        MapCache.SetCurrentNode(startNodeId);
+        
+        Debug.Log($"[GameManager] ::: CurrentMap cached. seed={usedSeed}, currentNodeId={MapCache.CurrentNodeId}");
     }
 
-    public void StartNewSession()
-    { 
-        int newSeed = useFixedSeedForDebug ? seed : Random.Range(0, int.MaxValue);
-        mapSystem.Build(mapId, newSeed);
-    }
-
-    public void BuildFromSharedSeed(int sharedSeed)
+    public void SelectNextNodeAndMove(int toNodeId)
     {
-        mapSystem.Build(mapId, sharedSeed);
+        int fromNodeId = MapCache.CurrentNodeId;
+        
+        if (fromNodeId >= 0 && fromNodeId != toNodeId)
+            MapCache.RecordVisitedEdge(fromNodeId, toNodeId);
+        
+        MapCache.SetCurrentNode(toNodeId);
     }
 
-    private void HandleMapBuilt(MapContext ctx)
+    public void ClearCurrentMap()
     {
-        PrintGraph(ctx.Graph);
-    }
-
-    private void PrintGraph(MapGraph graph)
-    {
-        Debug.Log("=== MAP GRAPH (Diagram-aligned) ===");
-
-        foreach (var node in graph.Nodes)
-        {
-            string next = node.NextNodeIds.Count == 0
-                ? "-"
-                : string.Join(", ", node.NextNodeIds);
-
-            Debug.Log($"Node {node.Id} | Depth {node.Depth} | {node.Type} -> [{next}]");
-        }
+        MapCache.Clear();
+        Debug.Log("[GameManager] ::: CurrentMap cache cleared.");
     }
 }

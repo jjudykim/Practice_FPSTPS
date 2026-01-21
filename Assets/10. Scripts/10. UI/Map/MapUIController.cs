@@ -1,10 +1,16 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.iOS;
+using UnityEngine.AdaptivePerformance;
 using UnityEngine.UI;
 
 public class MapUIController :  MonoBehaviour
 {
+    public enum MapUIMode
+    {
+        ViewOnly,
+        Interactive
+    }
+
     [Header("Dependencies")] 
     [SerializeField] private MapSystem mapSystem;
     
@@ -33,10 +39,13 @@ public class MapUIController :  MonoBehaviour
     
     private readonly List<GameObject> spawned = new();
 
-    private MapGraph currentGraph;
-    private readonly Dictionary<int, MapNode> nodeById = new Dictionary<int, MapNode>();
+    private readonly Dictionary<int, MapNode> nodesById = new();
+    private readonly Dictionary<int, MapNodeView> nodeViewsById = new();
+    private readonly List<MapEdgeView> edgeViews = new();
     
     public bool IsOpen => panelRoot != null && panelRoot.activeSelf;
+
+    private MapUIMode currentMode = MapUIMode.Interactive;
 
     private void Awake()
     {
@@ -44,32 +53,54 @@ public class MapUIController :  MonoBehaviour
             panelRoot.SetActive(false);
     }
 
-    public void Toggle(MapGraph graph)
+    private void Start()
+    {
+        if (actionRouter == null)
+            actionRouter = GameManager.Instance.GetComponent<MapNodeActionRouter>();
+    }
+
+    public void Toggle(MapGraph graph, MapUIMode mode)
     {
         if (IsOpen)
             Close();
         else
-            Open(graph);
+        {
+            if (mode == MapUIMode.Interactive)
+                Open(graph, false);
+            else
+                Open(graph, true);
+        }
     }
 
-    private void Open(MapGraph graph)
+    public void Open(MapGraph graph)
     {
+        Open(graph, false);
+    }
+
+    public void Open(MapGraph graph, bool viewOnly)
+    {
+        if (graph == null)
+        {
+            Debug.LogError("[MapUIController] ::: graph is null");
+            return;
+        }
+
         if (panelRoot == null)
         {
             Debug.LogError("[MapUIController] panelRoot is null");
             return;
         }
         
+        currentMode = viewOnly ? MapUIMode.ViewOnly : MapUIMode.Interactive;
+        
         panelRoot.SetActive(true);
-        Clear();
-
-        currentGraph = graph;
-
-        nodeById.Clear();
+        ClearUI();
+        ClearCaches();
+        
         for (int i = 0; i < graph.Nodes.Count; ++i)
         {
             MapNode n = graph.Nodes[i];
-            nodeById[n.Id] = n;
+            nodesById[n.Id] = n;
         }
 
         var settings = new MapGraphLayout.LayoutSettings(primarySpacing
@@ -80,7 +111,8 @@ public class MapUIController :  MonoBehaviour
         Dictionary<int, Vector2> positions = MapGraphLayout.BuildNodePositions(graph, settings);
 
         ResizeContentToFit(positions);
-
+        
+        // 노드 생성
         foreach (var node in graph.Nodes)
         {
             if (positions.TryGetValue(node.Id, out Vector2 pos) == false)
@@ -88,13 +120,25 @@ public class MapUIController :  MonoBehaviour
 
             var view = Instantiate(nodePrefab, nodesRoot);
             spawned.Add(view.gameObject);
+            nodeViewsById[node.Id] = view;
+            Debug.Log($"curCreateNode : {node.Id}");
 
             RectTransform rt = view.GetComponent<RectTransform>();
             rt.anchoredPosition = pos;
-            
-            view.Bind(node, HandleNodeClicked);
-        }
 
+            if (viewOnly == false)
+            {
+                view.Bind(node, HandleNodeClicked);
+                view.SetRaycastBlock(true);
+            }
+            else
+            {
+                view.Bind(node, null);
+                view.SetRaycastBlock(false);
+            }
+        }
+        
+        // 간선 생성
         foreach (var node in graph.Nodes)
         {
             if (node.NextNodeIds == null || node.NextNodeIds.Count == 0)
@@ -111,11 +155,27 @@ public class MapUIController :  MonoBehaviour
                 var edge = Instantiate(edgePrefab, edgesRoot);
                 spawned.Add(edge.gameObject);
                 
-                edge.Set(start, end);
+                edge.Set(node.Id, nextId, start, end);
+                
+                edgeViews.Add(edge);
             }
         }
 
         SnapToStart();
+    }
+
+    private int FindStartNodeId(MapGraph graph)
+    {
+        if (graph == null || graph.Nodes == null)
+            return -1;
+
+        for (int i = 0; i < graph.Nodes.Count; ++i)
+        {
+            if (graph.Nodes[i].Type == NodeType.Start)
+                return graph.Nodes[i].Id;
+        }
+
+        return (graph.Nodes.Count > 0) ? graph.Nodes[0].Id : -1;
     }
 
     private void SnapToStart()
@@ -149,13 +209,13 @@ public class MapUIController :  MonoBehaviour
             minY = Mathf.Min(minY, p.y);
             maxY = Mathf.Max(maxY, p.y);
         }
-
-        RectTransform viewport = scrollRect.viewport;
+        
         float width = (maxX - minX) + contentPaddingX * 2f;
         float height = (maxY - minY) + contentPaddingY * 2f;
         
-        width  = Mathf.Max(width, width + 1f);
-        height = Mathf.Max(height, height + 1f);
+        RectTransform viewport = scrollRect.viewport;
+        width  = Mathf.Max(width, viewport.rect.width + 1f);
+        height = Mathf.Max(height, viewport.rect.height + 1f);
 
 
         content.sizeDelta = new Vector2(width, height);
@@ -167,10 +227,12 @@ public class MapUIController :  MonoBehaviour
             return;
         
         panelRoot.SetActive(false);
-        Clear();
+        
+        ClearUI();
+        ClearCaches();
     }
 
-    private void Clear()
+    private void ClearUI()
     {
         for (int i = 0; i < spawned.Count; ++i)
         {
@@ -179,25 +241,121 @@ public class MapUIController :  MonoBehaviour
         }
 
         spawned.Clear();
+    }
 
-        currentGraph = null;
-        nodeById.Clear();
+    private void ClearCaches()
+    {
+        nodesById.Clear();
+        nodeViewsById.Clear();
+        edgeViews.Clear();
     }
 
     private void HandleNodeClicked(int id)
     {
-        if (actionRouter == null)
-        {
-            Debug.LogError("[MapUIController] actionRouter is null. Assign it in Inspector.");
+        if (currentMode == MapUIMode.ViewOnly)
             return;
-        }
+        
+        if (actionRouter == null)
+            actionRouter = GameManager.Instance.GetComponent<MapNodeActionRouter>();
 
-        if (nodeById.TryGetValue(id, out MapNode node) == false || node == null)
+        if (nodesById.TryGetValue(id, out MapNode node) == false || node == null)
         {
             Debug.LogError($"[MapUIController] ::: Cannot find MapNode by id = {id}");
             return;
         }
 
         actionRouter.OnNodeClicked(node);
+    }
+
+    public void ApplyProgress(MapRunCache cache, MapUIMode mode)
+    {
+        if (cache == null || cache.CurrentGraph == null)
+            return;
+
+        if (cache.CurrentNodeId < 0)
+        {
+            int startId = FindStartNodeId(cache.CurrentGraph);
+            Debug.Log("startNodeId : " + startId);
+
+            foreach (var kv in nodeViewsById)
+            {
+                int nodeId = kv.Key;
+                MapNodeView view = kv.Value;
+                
+                if (nodeId == startId)
+                    view.ApplyState(MapNodeView.NodeUIState.Available);
+                else
+                    view.ApplyState(MapNodeView.NodeUIState.Locked);
+                
+                if (mode == MapUIMode.ViewOnly)
+                    view.SetRaycastBlock(false);
+            }
+
+            for (int i = 0; i < edgeViews.Count; ++i)
+            {
+                if (edgeViews[i] == null)
+                    edgeViews[i].SetState(MapEdgeView.EdgeUIState.Default);
+            }
+
+            return;
+        }
+
+        nodesById.TryGetValue(cache.CurrentNodeId, out MapNode currentNode);
+
+        HashSet<int> nextSet = new HashSet<int>();
+        if (currentNode != null)
+        {
+            for (int i = 0; i < currentNode.NextNodeIds.Count; ++i)
+                nextSet.Add(currentNode.NextNodeIds[i]);
+        }
+
+        foreach (var kv in nodeViewsById)
+        {
+            int nodeId = kv.Key;
+            MapNodeView view = kv.Value;
+
+            MapNodeView.NodeUIState state;
+
+            if (nodeId == cache.CurrentNodeId)
+                state = MapNodeView.NodeUIState.Current;
+            else if (nextSet.Contains(nodeId))
+                state = MapNodeView.NodeUIState.Available;
+            else if (cache.ClearedNodeIds.Contains(nodeId))
+                state = MapNodeView.NodeUIState.Cleared;
+            else
+                state = MapNodeView.NodeUIState.Locked;
+
+            view.ApplyState(state);
+            
+            if (mode == MapUIMode.ViewOnly)
+                view.SetRaycastBlock(false);
+        }
+
+        for (int i = 0; i < edgeViews.Count; ++i)
+        {
+            MapEdgeView edge = edgeViews[i];
+            if (edge == null)
+                continue;
+
+            bool isCandidate = currentNode != null 
+                             && edge.FromId == cache.CurrentNodeId 
+                             && nextSet.Contains(edge.ToId);
+
+            if (isCandidate)
+            {
+                edge.SetState(MapEdgeView.EdgeUIState.Candidate);
+                continue;
+            }
+
+            bool isVisited = cache.IsVisitedEdge(edge.FromId, edge.ToId);
+
+            if (isVisited)
+            {
+                edge.SetState(MapEdgeView.EdgeUIState.Visited);
+                continue;
+            }
+
+            edge.SetState(MapEdgeView.EdgeUIState.Default);
+        }
     }
 }

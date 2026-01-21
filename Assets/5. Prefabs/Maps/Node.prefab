@@ -1134,6 +1134,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapNodeView
   buttonManager: {fileID: 896035796759202045}
+  raycastTargets: []
 --- !u!1 &4122338873087573408
 GameObject:
   m_ObjectHideFlags: 0

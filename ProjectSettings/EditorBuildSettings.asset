@@ -9,8 +9,11 @@ EditorBuildSettings:
     path: Assets/0. Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
-    path: Assets/0. Scenes/01. MapGenerator.unity
+    path: Assets/0. Scenes/Debug/01. MapGenerator.unity
     guid: 6a265a07cf96b5e4f9e081819edbef29
+  - enabled: 1
+    path: Assets/0. Scenes/TestMapScene.unity
+    guid: 86e060feac7276a4e9679ae362ad9b7b
   - enabled: 1
     path: Assets/0. Scenes/TestMapScenes/TestBossScene1.unity
     guid: 3dd1d7d4634cc5d43a951f9fd8179320
@@ -25,10 +28,10 @@ EditorBuildSettings:
     guid: 71b63828180d376498195b3e19057871
   - enabled: 1
     path: Assets/0. Scenes/TestMapScenes/TestCombatScene2.unity
-    guid: 983374d430d02b54cad26e350eaab90d
+    guid: 47a3423844278014b957826f1ef55595
   - enabled: 1
     path: Assets/0. Scenes/TestMapScenes/TestCombatScene3.unity
-    guid: b5c4264b3824f6642b36b59e5ddec3a3
+    guid: a9e4eee66a6dcb84ba43cf0cc58e052e
   - enabled: 1
     path: Assets/0. Scenes/TestMapScenes/TestCombatScene4.unity
     guid: 5660bce40da6f38439269ba8e52ea4cd

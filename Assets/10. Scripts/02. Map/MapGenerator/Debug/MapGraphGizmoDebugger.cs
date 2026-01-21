@@ -16,9 +16,7 @@ public class MapGraphGizmosDebugger : MonoBehaviour
 
     [Header("Layout (Top -> Bottom)")]
     [Tooltip("Depth(진행 단계) 간 Y 간격. 위에서 아래로 내려가므로 보통 양수로 두고 내부에서 -로 적용합니다.")]
-    [SerializeField]
-    private float depthSpacingY = 3.0f;
-
+    [SerializeField] private float depthSpacingY = 3.0f;
     [SerializeField] private float nodeSpacingX = 2.0f;
 
     [Header("Draw")] [SerializeField] private float nodeRadius = 0.25f;
@@ -44,6 +42,9 @@ public class MapGraphGizmosDebugger : MonoBehaviour
 
     private void HandleMapBuilt(MapContext ctx)
     {
+        if (ctx == null || ctx.Graph == null)
+            return;
+        
         CachePositions(ctx.Graph);
     }
 
@@ -95,9 +96,7 @@ public class MapGraphGizmosDebugger : MonoBehaviour
         
         // 2) Edge 먼저 그리기
         DrawEdges(view);
-
-
-
+        
 #if UNITY_EDITOR
         if (view != null && drawNodeLabels)
         {
@@ -113,9 +112,9 @@ public class MapGraphGizmosDebugger : MonoBehaviour
 
         foreach (var e in view.RevealedEdges)
         {
-            if (!cachedPositions.TryGetValue(e.FromId, out Vector3 from))
+            if (cachedPositions.TryGetValue(e.FromId, out Vector3 from) == false)
                 continue;
-            if (!cachedPositions.TryGetValue(e.ToId, out Vector3 to))
+            if (cachedPositions.TryGetValue(e.ToId, out Vector3 to) == false)
                 continue;
             
             Gizmos.color = Color.white;
@@ -160,7 +159,6 @@ public class MapGraphGizmosDebugger : MonoBehaviour
 
     private Color GetColorByType(NodeType type)
     {
-        // 색은 취향이라 최소한만 구분
         switch (type)
         {
             case NodeType.Start: return Color.green;

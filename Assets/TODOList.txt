@@ -1,0 +1,59 @@
+### 🔹 단계별 로드맵(추천 구현 순서)
+
+쭈디가 이미 기반을 많이 깔아놨으니 “가장 덜 흔들리는 순서”로 제안드릴게요.
+
+
+### 🔹 1단계: 진행 데이터 확정(MapRunCache 확장)
+
+🔹 MarkCleared(nodeId)
+🔹 RecordTraverse(fromId, toId) ← 간선 누적
+🔹 (선택) GetCurrentNextSet() 유틸
+
+✅ 이 단계가 끝나면, UI는 언제든 cache만 읽어서 그릴 수 있어요.
+
+======================================================
+### 🔹 2단계: ApplyProgress를 “모드 기반”으로 확장
+======================================================
+🔹 ApplyProgress(cache, mode)로 바꾸고
+
+ViewOnly: 전부 Interactable false
+
+Interactive: nextSet만 true, 나머지 false
+🔹 간선 색 3종 처리:
+
+지나온 간선(traversed): path color
+
+현재 노드 outgoing(nextSet): emphasis
+
+그 외: default faint
+
+✅ 여기까지 하면 목표 2/3/4의 UI 규칙이 완성됩니다.
+
+### 🔹 3단계: Room에서 “보기 전용 UI Toggle”
+
+🔹 각 Room 씬에서 키(M 등) 누르면
+
+MapOverlayPanel 활성화
+
+Open(cache.CurrentGraph, ViewOnly)
+
+ApplyProgress(cache, ViewOnly)
+
+✅ 이때 중요한 규칙:
+
+“보기 전용 UI”는 선택 로직을 타지 않도록 모드로 막기
+
+### 🔹 4단계: 클리어 + 탈출 트리거에서 “Interactive Map” 열기
+
+Room 클리어 후 탈출 트리거 도달 시:
+🔹 (A) MapScene로 이동 → 거기서 Interactive로 Open
+또는
+🔹 (B) Room 위 Fullscreen 모달로 Interactive Map 열기
+
+저는 이 지점에서 MapScene으로 분리를 추천드립니다.
+
+전투/룸 입력과 완전 분리
+
+UI 충돌 거의 0
+
+연출(페이드, 스냅) 넣기도 좋음

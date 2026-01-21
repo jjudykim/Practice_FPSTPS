@@ -85,10 +85,7 @@ public class SingletonBase<T> : MonoBehaviour where T : MonoBehaviour
     /// <summary>
     /// 싱글톤 제거 시점에서 호출됨 (오버라이드 OK)
     /// </summary>
-    protected virtual void OnDispose()
-    {
-        throw new NotImplementedException();
-    }
+    protected virtual void OnDispose() { }
 
     public static void ResetInstance()
     {

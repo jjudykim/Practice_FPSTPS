@@ -22,14 +22,11 @@ public class MapNodeActionRouter : MonoBehaviour
             return;
 
         string sceneName = selector.PickScene(node.Type, currentMapSeed, node.Id);
-
         if (string.IsNullOrEmpty(sceneName))
-        {
-            Debug.LogWarning($"[MapNodeActionRouter] ::: No Scene candidates for type = {node.Type}");
             return;
-        }
         
-        Debug.Log($"[MapNodeActionRouter] ::: Load Scene : type = {node.Type}, nodeId={node.Id}, scene={sceneName}");
+        GameManager.Instance.SelectNextNodeAndMove(node.Id);
+        
         SceneManager.LoadScene(sceneName);
     }
 
