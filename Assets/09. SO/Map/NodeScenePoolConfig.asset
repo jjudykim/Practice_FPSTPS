@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d4e5552ad463dd4bb19898fb90a8499, type: 3}
+  m_Name: NodeScenePoolConfig
+  m_EditorClassIdentifier: Assembly-CSharp::NodeScenePoolConfig
+  pools:
+  - nodeType: 0
+    sceneNames:
+    - TestCombatScene1
+    - TestCombatScene2
+    - TestCombatScene3
+    - TestCombatScene4
+    - TestCombatScene5
+  - nodeType: 1
+    sceneNames:
+    - TestCombatScene1
+    - TestCombatScene2
+    - TestCombatScene3
+    - TestCombatScene4
+    - TestCombatScene5
+  - nodeType: 2
+    sceneNames:
+    - TestRewardScene1
+    - TestRewardScene2
+    - TestRewardScene3
+  - nodeType: 3
+    sceneNames:
+    - TestShopScene1
+    - TestShopScene2
+    - TestShopScene3
+  - nodeType: 4
+    sceneNames:
+    - TestBossScene1
+    - TestBossScene2
+    - TestBossScene3
