@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEditor.TerrainTools;
 using UnityEngine;
 using UnityEngine.AdaptivePerformance;
 using UnityEngine.UI;
@@ -34,6 +35,9 @@ public class MapUIController :  MonoBehaviour
     [SerializeField] private float primarySpacing = 220f;
     [SerializeField] private float secondarySpacing = 120f;
 
+    [Header("Movement Rule")] 
+    [SerializeField] private bool allowBacktracking = true;
+
     [Header("Node Action Router")] 
     [SerializeField] private MapNodeActionRouter actionRouter;
     
@@ -41,6 +45,7 @@ public class MapUIController :  MonoBehaviour
 
     private readonly Dictionary<int, MapNode> nodesById = new();
     private readonly Dictionary<int, MapNodeView> nodeViewsById = new();
+    private readonly Dictionary<int, HashSet<int>> neighborsById = new();
     private readonly List<MapEdgeView> edgeViews = new();
     
     public bool IsOpen => panelRoot != null && panelRoot.activeSelf;
@@ -111,6 +116,7 @@ public class MapUIController :  MonoBehaviour
         Dictionary<int, Vector2> positions = MapGraphLayout.BuildNodePositions(graph, settings);
 
         ResizeContentToFit(positions);
+        BuildNeighbors(graph);
         
         // 노드 생성
         foreach (var node in graph.Nodes)
@@ -121,7 +127,6 @@ public class MapUIController :  MonoBehaviour
             var view = Instantiate(nodePrefab, nodesRoot);
             spawned.Add(view.gameObject);
             nodeViewsById[node.Id] = view;
-            Debug.Log($"curCreateNode : {node.Id}");
 
             RectTransform rt = view.GetComponent<RectTransform>();
             rt.anchoredPosition = pos;
@@ -161,7 +166,37 @@ public class MapUIController :  MonoBehaviour
             }
         }
 
+        if (actionRouter != null)
+            actionRouter.SetMapSeed(GameManager.Instance.MapCache.CurrentSeed);
+        
         SnapToStart();
+        
+        if (nodesRoot != null)
+            nodesRoot.SetAsLastSibling();
+        
+        if (edgesRoot != null)
+            edgesRoot.SetAsFirstSibling();
+    }
+
+    private void BuildNeighbors(MapGraph graph)
+    {
+        neighborsById.Clear();
+
+        foreach (var n in graph.Nodes)
+            neighborsById[n.Id] = new HashSet<int>();
+
+        foreach (var from in graph.Nodes)
+        {
+            if (from.NextNodeIds == null) continue;
+
+            foreach (int toId in from.NextNodeIds)
+            {
+                neighborsById[from.Id].Add(toId);
+
+                if (allowBacktracking && neighborsById.ContainsKey(toId))
+                   neighborsById[toId].Add(from.Id);
+            }
+        }
     }
 
     private int FindStartNodeId(MapGraph graph)
@@ -248,6 +283,7 @@ public class MapUIController :  MonoBehaviour
         nodesById.Clear();
         nodeViewsById.Clear();
         edgeViews.Clear();
+        neighborsById.Clear();
     }
 
     private void HandleNodeClicked(int id)
@@ -258,11 +294,24 @@ public class MapUIController :  MonoBehaviour
         if (actionRouter == null)
             actionRouter = GameManager.Instance.GetComponent<MapNodeActionRouter>();
 
-        if (nodesById.TryGetValue(id, out MapNode node) == false || node == null)
-        {
-            Debug.LogError($"[MapUIController] ::: Cannot find MapNode by id = {id}");
+        var cache = GameManager.Instance.MapCache;
+        if (cache == null || cache.CurrentGraph == null)
             return;
+
+        if (cache.CurrentNodeId < 0)
+        {
+            int startId = FindStartNodeId(cache.CurrentGraph);
+            if (id != startId)
+                return;
         }
+        else
+        {
+            if (neighborsById.TryGetValue(cache.CurrentNodeId, out var nb) == false || nb.Contains(id) == false)
+                return;
+        }
+
+        if (nodesById.TryGetValue(id, out var node) == false || node == null)
+            return;
 
         actionRouter.OnNodeClicked(node);
     }
@@ -293,7 +342,7 @@ public class MapUIController :  MonoBehaviour
 
             for (int i = 0; i < edgeViews.Count; ++i)
             {
-                if (edgeViews[i] == null)
+                if (edgeViews[i] != null)
                     edgeViews[i].SetState(MapEdgeView.EdgeUIState.Default);
             }
 
@@ -303,16 +352,16 @@ public class MapUIController :  MonoBehaviour
         nodesById.TryGetValue(cache.CurrentNodeId, out MapNode currentNode);
 
         HashSet<int> nextSet = new HashSet<int>();
-        if (currentNode != null)
+        if (neighborsById.TryGetValue(cache.CurrentNodeId, out var nb))
         {
-            for (int i = 0; i < currentNode.NextNodeIds.Count; ++i)
-                nextSet.Add(currentNode.NextNodeIds[i]);
+            foreach (int nodeId in nb)
+                nextSet.Add(nodeId);
         }
 
-        foreach (var kv in nodeViewsById)
+        foreach (var pair in nodeViewsById)
         {
-            int nodeId = kv.Key;
-            MapNodeView view = kv.Value;
+            int nodeId = pair.Key;
+            MapNodeView view = pair.Value;
 
             MapNodeView.NodeUIState state;
 
@@ -337,9 +386,11 @@ public class MapUIController :  MonoBehaviour
             if (edge == null)
                 continue;
 
-            bool isCandidate = currentNode != null 
-                             && edge.FromId == cache.CurrentNodeId 
-                             && nextSet.Contains(edge.ToId);
+            bool isCandidate = currentNode != null &&
+                               (
+                                   (edge.FromId == cache.CurrentNodeId && nextSet.Contains(edge.ToId)) ||
+                                   (edge.ToId == cache.CurrentNodeId && nextSet.Contains(edge.FromId))
+                               );
 
             if (isCandidate)
             {
@@ -347,7 +398,8 @@ public class MapUIController :  MonoBehaviour
                 continue;
             }
 
-            bool isVisited = cache.IsVisitedEdge(edge.FromId, edge.ToId);
+            bool isVisited = cache.IsVisitedEdge(edge.FromId, edge.ToId) 
+                           || cache.IsVisitedEdge(edge.ToId, edge.FromId);
 
             if (isVisited)
             {

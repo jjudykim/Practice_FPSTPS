@@ -39,10 +39,13 @@ public class GameManager : SingletonBase<GameManager>
     public void SelectNextNodeAndMove(int toNodeId)
     {
         int fromNodeId = MapCache.CurrentNodeId;
-        
+
         if (fromNodeId >= 0 && fromNodeId != toNodeId)
+        {
             MapCache.RecordVisitedEdge(fromNodeId, toNodeId);
-        
+            MapCache.RecordVisitedEdge(toNodeId, fromNodeId);
+        }
+
         MapCache.SetCurrentNode(toNodeId);
     }
 

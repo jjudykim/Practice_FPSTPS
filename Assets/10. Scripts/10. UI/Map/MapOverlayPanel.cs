@@ -23,7 +23,7 @@ public class MapOverlayPanel : MonoBehaviour
             Debug.LogError("[MapOverlayPanel] ::: MapUIController is null");
             return;
         }
-
+ 
         mapUIController.Open(graph);
     }
 

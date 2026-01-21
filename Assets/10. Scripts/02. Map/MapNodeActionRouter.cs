@@ -7,7 +7,8 @@ public class MapNodeActionRouter : MonoBehaviour
     [Header("Config")] 
     [SerializeField] private NodeScenePoolConfig poolConfig;
 
-    [Header("Runtime")] [SerializeField] private int currentMapSeed;
+    [Header("Runtime")] 
+    [SerializeField] private int currentMapSeed;
 
     private NodeSceneSelector selector;
 
@@ -22,11 +23,11 @@ public class MapNodeActionRouter : MonoBehaviour
             return;
 
         string sceneName = selector.PickScene(node.Type, currentMapSeed, node.Id);
+        Debug.Log("[MapNodeActionRouter] ::: Pick한 씬 이름 : " + sceneName);
         if (string.IsNullOrEmpty(sceneName))
             return;
         
         GameManager.Instance.SelectNextNodeAndMove(node.Id);
-        
         SceneManager.LoadScene(sceneName);
     }
 

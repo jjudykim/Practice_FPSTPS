@@ -37,7 +37,7 @@ MonoBehaviour:
     - TestShopScene1
     - TestShopScene2
     - TestShopScene3
-  - nodeType: 3
+  - nodeType: 4
     sceneNames:
     - TestBossScene1
     - TestBossScene2

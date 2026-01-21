@@ -80,7 +80,7 @@ public class RoomClearExitController : MonoBehaviour
 
         if (string.IsNullOrEmpty(mapSceneName))
             return;
-
+        
         SceneManager.LoadScene(mapSceneName);
    }
 }

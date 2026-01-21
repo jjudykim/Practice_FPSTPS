@@ -33,7 +33,7 @@ public class MapSceneController : MonoBehaviour
         if (TryOpenFromExistingCache())
             return;
         
-        BuildNewSession();
+        Debug.LogWarning("[MapSceneController] ::: No existing cache. Skip auto build");
     }
 
     private void BuildNewSession()
