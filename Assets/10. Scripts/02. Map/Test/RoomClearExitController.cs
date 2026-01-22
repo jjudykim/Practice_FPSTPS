@@ -45,13 +45,13 @@ public class RoomClearExitController : MonoBehaviour
         if (isCleared)
             return;
 
-        if (GameManager.Instance == null)
+        if (Managers.Instance.Game == null)
         {
             Debug.LogError("[RoomClearExitController] ::: GameManager.Instance is null");
             return;
         }
 
-        MapRunCache cache = GameManager.Instance.MapCache;
+        MapRunCache cache = Managers.Instance.Game.MapCache;
         if (cache == null || cache.HasGraph == false)
         {
             Debug.LogError("[RoomClearExitController] ::: MapCache is empty (no graph)");

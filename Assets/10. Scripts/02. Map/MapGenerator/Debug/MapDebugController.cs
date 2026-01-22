@@ -27,6 +27,8 @@ public class MapDebugController : MonoBehaviour
     [Header("Auto Start")] 
     [SerializeField] private bool autoStartOnSceneLoad = true;
     [SerializeField] private bool openUIAfterBuild = true;
+
+    private GameManager game;
     
     private void Awake()
     {
@@ -41,18 +43,20 @@ public class MapDebugController : MonoBehaviour
 
         if (mapSystem != null)
             mapSystem.OnMapBuilt += HandleMapBuilt;
+        
+        game = Managers.Instance.Game;
     }
 
     private void Start()
     {
-        if (GameManager.Instance != null && GameManager.Instance.HasActiveMap)
+        if (game != null && game.HasActiveMap)
         {
-            var cache = GameManager.Instance.MapCache;
+            var cache = game.MapCache;
 
             if (mapUI != null && cache.CurrentGraph != null)
             {
                 mapUI.Open(cache.CurrentGraph, false);
-                mapUI.ApplyProgress(GameManager.Instance.MapCache, MapUIController.MapUIMode.Interactive);
+                mapUI.ApplyProgress(game.MapCache, MapUIController.MapUIMode.Interactive);
             }
 
             return;
@@ -106,14 +110,14 @@ public class MapDebugController : MonoBehaviour
             return;
         }
         
-        GameManager.Instance.SetCurrentMap(ctx.Graph, ctx.UsedSeed);
+        game.SetCurrentMap(ctx.Graph, ctx.UsedSeed);
 
         if (mapUI != null && openUIAfterBuild)
         {
             bool viewOnly = (mode == MapUIController.MapUIMode.ViewOnly);
             mapUI.Open(ctx.Graph, viewOnly);
             
-            mapUI.ApplyProgress(GameManager.Instance.MapCache, mode);
+            mapUI.ApplyProgress(game.MapCache, mode);
         }
     }
 }

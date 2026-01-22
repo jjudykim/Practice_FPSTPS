@@ -72,7 +72,7 @@ public class MapSceneBootstrapper : MonoBehaviour
         const float timeoutSeconds = 5f;
         float t = 0f;
 
-        while (GameManager.Instance == null)
+        while (Managers.Instance.Game == null)
         {
             t += Time.unscaledDeltaTime;
             if (t >= timeoutSeconds)
@@ -98,10 +98,10 @@ public class MapSceneBootstrapper : MonoBehaviour
 
     private bool TryOpenFromExistingCache()
     {
-        if (GameManager.Instance == null)
+        if (Managers.Instance.Game == null)
             return false;
 
-        MapRunCache cache = GameManager.Instance.MapCache;
+        MapRunCache cache = Managers.Instance.Game.MapCache;
 
         if (cache == null || cache.HasGraph == false || cache.CurrentGraph == null)
             return false;

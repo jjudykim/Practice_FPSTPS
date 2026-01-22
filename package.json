@@ -1,0 +1,20 @@
+{
+  "name": "practice_fpstps",
+  "version": "1.0.0",
+  "description": "3D프로젝트_Cat Save The Z-world 모듈 제작을 위한 연습용 프로젝트",
+  "homepage": "https://github.com/jjudykim/Practice_FPSTPS#readme",
+  "bugs": {
+    "url": "https://github.com/jjudykim/Practice_FPSTPS/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jjudykim/Practice_FPSTPS.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

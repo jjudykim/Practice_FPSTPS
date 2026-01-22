@@ -52,13 +52,13 @@ public class MapSceneController : MonoBehaviour
 
     private bool TryOpenFromExistingCache()
     {
-        if (GameManager.Instance == null)
+        if (Managers.Instance.Game == null)
         {
             Debug.LogWarning("[MapSceneController] ::: GameManager.Instance is null");
             return false;
         }
 
-        MapRunCache cache = GameManager.Instance.MapCache;
+        MapRunCache cache = Managers.Instance.Game.MapCache;
         if (cache == null || cache.HasGraph == false || cache.CurrentGraph == null)
             return false;
 
@@ -88,13 +88,13 @@ public class MapSceneController : MonoBehaviour
             return;
         }
 
-        if (GameManager.Instance == null)
+        if (Managers.Instance.Game == null)
         {
             Debug.LogError("[MapSceneController] ::: HandleMapBuilt failed: GameManager.Instance is null");
             return;
         }
         
-        GameManager.Instance.SetCurrentMap(ctx.Graph, ctx.UsedSeed);
+        Managers.Instance.Game.SetCurrentMap(ctx.Graph, ctx.UsedSeed);
         
         if (openUIOnEnter == false || mapUI == null)
             return;
@@ -102,7 +102,7 @@ public class MapSceneController : MonoBehaviour
         mapUI.Open(ctx.Graph, false);
 
         if (applyProgressOnOpen)
-            mapUI.ApplyProgress(GameManager.Instance.MapCache,  MapUIController.MapUIMode.Interactive);
+            mapUI.ApplyProgress(Managers.Instance.Game.MapCache,  MapUIController.MapUIMode.Interactive);
 
         Debug.Log($"[MapSceneController] ::: Build completed. Cached & UI opened. seed={ctx.UsedSeed}");
     }

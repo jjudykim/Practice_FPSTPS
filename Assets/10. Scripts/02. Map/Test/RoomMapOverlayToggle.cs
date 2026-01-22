@@ -56,10 +56,10 @@ public class RoomMapOverlayToggle : MonoBehaviour
 
     private void TryRefresh()
     {
-        if (GameManager.Instance == null)
+        if (Managers.Instance.Game == null)
             return;
         
-        MapRunCache cache = GameManager.Instance.MapCache;
+        MapRunCache cache = Managers.Instance.Game.MapCache;
         
         if (cache == null || cache.HasGraph == false || cache.CurrentGraph == null)
             return;
