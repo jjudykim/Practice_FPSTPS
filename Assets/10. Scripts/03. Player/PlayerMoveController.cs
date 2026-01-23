@@ -16,6 +16,7 @@ public class PlayerMoveController : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private CameraController cameraController;
     [SerializeField] private PlayerLookController lookController;
+    [SerializeField] private PlayerCombatController combatController;
     
     [Header("Move Settings")] 
     [SerializeField] private float walkSpeed = 3.0f;
@@ -31,6 +32,8 @@ public class PlayerMoveController : MonoBehaviour
 
     private Tween rollTween;
     private bool isRolling;
+    public bool IsRolling => isRolling;
+    public bool IsRunning { get; private set; }
 
     void Awake()
     {
@@ -75,7 +78,14 @@ public class PlayerMoveController : MonoBehaviour
     {
         // Move & Run
         Vector3 moveDir = GetMoveDirection();
+        
+        bool isAiming = combatController.IsAiming;
+        bool hasMoveInput = Mathf.Abs(input.MoveX) > 0.0001f || Mathf.Abs(input.MoveY) > 0.0001f;
+        bool wantRun = input.Run && (isAiming == false);
+        
         float speed = input.Run ? runSpeed : walkSpeed;
+
+        IsRunning = wantRun && hasMoveInput;
         
         transform.position += moveDir * (speed * Time.deltaTime);
 

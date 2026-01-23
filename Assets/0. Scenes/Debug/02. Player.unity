@@ -699,7 +699,7 @@ MonoBehaviour:
   upperBodyLayerName: UpperBody Layer
   aimHold: 1
   fireCooldown: 0.12
-  reloadDuration: 1.2
+  reloadDuration: 2
 --- !u!1 &1116745488
 GameObject:
   m_ObjectHideFlags: 0

@@ -19,6 +19,7 @@ public class PlayerCombatController : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private GameObject weaponModel;
     [SerializeField] private PlayerLookController lookController;
+    [SerializeField] private PlayerMoveController moveController;
     [SerializeField] private string upperBodyLayerName = "UpperBody";
     
     [SerializeField] private bool aimHold = true;
@@ -28,10 +29,19 @@ public class PlayerCombatController : MonoBehaviour
     public bool IsWeaponEquipped { get; private set; }
     public bool IsAiming { get; private set; }
     public bool IsReloading { get; private set; }
+    
+    public bool IsBusyByRoll => (moveController != null) && moveController.IsRolling;
+    private bool IsBusyByRunForFire => (moveController != null) && moveController.IsRunning;
 
-    public bool CanFire => IsWeaponEquipped && (IsReloading == false);
-    public bool CanAim => IsWeaponEquipped &&  (IsReloading == false);
+    public bool CanFire => IsWeaponEquipped
+                           && (IsReloading == false) 
+                           && (IsBusyByRoll == false) 
+                           && (IsBusyByRunForFire == false);
 
+    public bool CanAim => IsWeaponEquipped
+                          && (IsReloading == false)
+                          && (IsBusyByRoll == false);
+    
     private InputManager input;
     private int upperBodyLayerIndex = -1;
 
@@ -56,6 +66,8 @@ public class PlayerCombatController : MonoBehaviour
     
     private void Update()
     {
+        bool rolling = IsBusyByRoll;
+        
         if (GetEquipToggleDown())
             ToggleEquip();
 
@@ -64,6 +76,18 @@ public class PlayerCombatController : MonoBehaviour
             if (IsAiming)
                 SetAiming(false);
 
+            return;
+        }
+
+        if (rolling)
+        {
+            if (IsAiming)
+                SetAiming(false);
+            
+            if (IsReloading)
+                CancelReload();
+            
+            ApplyAimDirectionParams();
             return;
         }
 
@@ -170,6 +194,9 @@ public class PlayerCombatController : MonoBehaviour
 
     private void TryReload()
     {
+        if (IsBusyByRoll)
+            return;
+        
         if (IsWeaponEquipped == false)
             return;
 
