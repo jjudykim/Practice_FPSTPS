@@ -13,6 +13,9 @@ public class InputManager
     // Run (지속 입력)
     public bool Run { get; private set; }
     
+    // Equip/UnEquip (원샷 입력)
+    public bool OnWeapon { get; private set; }
+
     // Roll (원샷 입력)
     public bool Roll { get; private set; }
     
@@ -45,10 +48,10 @@ public class InputManager
     public float POVY { get; private set; }
     
     // Shooting
-    [field: SerializeField] public bool Shoot { get; private set; }
+    public bool Shoot { get; private set; }
     
     // Shooting
-    [field: SerializeField] public bool Aiming { get; private set; }
+    public bool Aiming { get; private set; }
 
     public bool GamePlayInputEnable { get; set; } = true;  // 이동 / 공격 허용
     public bool UIInputEnabled { get; set; } = true;
@@ -64,6 +67,7 @@ public class InputManager
             
             Run = Input.GetKey(KeyCode.LeftShift);
             Roll = Input.GetKeyDown(KeyCode.Space);
+            OnWeapon = Input.GetKeyDown(KeyCode.F);
             Reload = Input.GetKeyDown(KeyCode.R);
             Shoot = Input.GetMouseButton(0);
             Aiming = Input.GetMouseButton(1);

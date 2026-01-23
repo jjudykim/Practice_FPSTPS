@@ -615,6 +615,7 @@ GameObject:
   - component: {fileID: 1086336503}
   - component: {fileID: 1086336502}
   - component: {fileID: 1086336504}
+  - component: {fileID: 1086336505}
   m_Layer: 0
   m_Name: PlayerCat
   m_TagString: Untagged
@@ -635,10 +636,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   animator: {fileID: 9146092943402965412}
-  cameraController: {fileID: 0}
+  cameraController: {fileID: 330585548}
+  lookController: {fileID: 1086336504}
   walkSpeed: 3
   runSpeed: 8
-  isWeaponEquipped: 0
+  rollDistance: 3
+  rollDuration: 0.8
+  rollEase: 6
 --- !u!4 &1086336503
 Transform:
   m_ObjectHideFlags: 0
@@ -674,9 +678,28 @@ MonoBehaviour:
   horizontalSensitivity: 1
   verticalSensitivity: 1
   firstPersonPitchMinMax: {x: -40, y: 40}
-  quarterHeadYawLimit: 45
+  quarterHeadYawLimit: 30
   quarterBodyFollowSpeed: 200
   planeY: 0
+--- !u!114 &1086336505
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1086336501}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62c63c4b70eba364fb7b0b816d34ff8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCombatController
+  animator: {fileID: 9146092943402965412}
+  weaponModel: {fileID: 3783808483987945953}
+  lookController: {fileID: 1086336504}
+  upperBodyLayerName: UpperBody Layer
+  aimHold: 1
+  fireCooldown: 0.12
+  reloadDuration: 1.2
 --- !u!1 &1116745488
 GameObject:
   m_ObjectHideFlags: 0
@@ -1525,7 +1548,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5275255464453661536, guid: 24bf1ef4aa42d6a4a8c8168369f77a90, type: 3}
       propertyPath: m_ApplyRootMotion
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6629015030187085381, guid: 24bf1ef4aa42d6a4a8c8168369f77a90, type: 3}
       propertyPath: m_Name

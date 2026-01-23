@@ -11,12 +11,11 @@ public class PlayerMoveController : MonoBehaviour
     private static readonly int SPEED = Animator.StringToHash("Speed");
     
     private static readonly int TRIGGER_ROLL = Animator.StringToHash("Roll");
-
-    private static readonly int IS_WEAPON_EQUIPPED = Animator.StringToHash("IsWeaponEquipped");
-
+    
     [Header("Refs")] 
     [SerializeField] private Animator animator;
     [SerializeField] private CameraController cameraController;
+    [SerializeField] private PlayerLookController lookController;
     
     [Header("Move Settings")] 
     [SerializeField] private float walkSpeed = 3.0f;
@@ -26,25 +25,18 @@ public class PlayerMoveController : MonoBehaviour
     [SerializeField] private float rollDistance = 3.0f;
     [SerializeField] private float rollDuration = 0.8f;
     [SerializeField] private Ease rollEase = Ease.OutQuad;
-
-    //[Header("Weapon Settings")]
-    //[SerializeField] private GameObject curEquippedWeapon;
-
+    
     private InputManager input;
     private Camera cam;
 
     private Tween rollTween;
     private bool isRolling;
 
-    public bool isWeaponEquipped;
-
     void Awake()
     {
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
-
-        //isWeaponEquipped = false;
-
+        
         input = Managers.Instance.Input;
         cam = Camera.main;
         
@@ -77,34 +69,29 @@ public class PlayerMoveController : MonoBehaviour
         {
             Debug.Log("[Player] Reload Trigger!");
         }
-
-
-        //if (Input.GetKeyDown(KeyCode.K))
-        //    isWeaponEquipped = !isWeaponEquipped;
-        //
-        //if (isWeaponEquipped)
-        //{
-        //    curEquippedWeapon.SetActive(true);
-        //    animator.SetBool(IS_WEAPON_EQUIPPED, true);
-        //}
-        //else
-        //{
-        //    curEquippedWeapon.SetActive(false);
-        //    animator.SetBool(IS_WEAPON_EQUIPPED, false);
-        //}
     }
 
     private void TickMove()
     {
         // Move & Run
-        Vector3 moveInput = new Vector3(input.MoveX, 0f, input.MoveY);
+        Vector3 moveDir = GetMoveDirection();
+        float speed = input.Run ? runSpeed : walkSpeed;
+        
+        transform.position += moveDir * (speed * Time.deltaTime);
 
+        animator.SetFloat(INPUT_X, input.MoveX);
+        animator.SetFloat(INPUT_Y, input.MoveY);
+        animator.SetFloat(SPEED, speed);
+    }
+
+    private Vector3 GetMoveDirection()
+    {
+        Vector3 moveInput = new Vector3(input.MoveX, 0f, input.MoveY);
+        
         if (moveInput.sqrMagnitude > 1f)
             moveInput.Normalize();
 
-        float speed = input.Run ? runSpeed : walkSpeed;
-
-        Vector3 moveWorld;
+        Vector3 moveDir;
 
         if (cameraController.Mode == CameraController.CameraMode.QuarterView)
         {
@@ -114,20 +101,17 @@ public class PlayerMoveController : MonoBehaviour
 
             camForward.y = 0f;
             camRight.y = 0f;
-
             camForward.Normalize();
             camRight.Normalize();
 
-            moveWorld = (camRight * moveInput.x) + (camForward * moveInput.z);
+            moveDir = (camRight * moveInput.x) + (camForward * moveInput.z);
         }
         else
-            moveWorld = (transform.right * moveInput.x) + (transform.forward * moveInput.z);
+        {
+            moveDir = (transform.right * moveInput.x) + (transform.forward * moveInput.z);    
+        }
 
-        transform.position += moveWorld * (speed * Time.deltaTime);
-
-        animator.SetFloat(INPUT_X, input.MoveX);
-        animator.SetFloat(INPUT_Y, input.MoveY);
-        animator.SetFloat(SPEED, speed);
+        return moveDir;
     }
 
     private void StartRoll()
@@ -137,7 +121,9 @@ public class PlayerMoveController : MonoBehaviour
         if (rollTween != null && rollTween.IsActive())
             rollTween.Kill();
 
-        Vector3 dir = transform.forward;
+        ApplyRollDirectionParams();
+
+        Vector3 dir = GetRollWorldDirection();
         dir.y = 0f;
 
         if (dir.sqrMagnitude < 0.0001f)
@@ -158,5 +144,35 @@ public class PlayerMoveController : MonoBehaviour
                                  isRolling = false;
                                  rollTween = null;
                              });
+    }
+
+    private void ApplyRollDirectionParams()
+    {
+        if (animator == null)
+            return;
+
+        if (lookController == null)
+            return;
+
+        Vector2 rollLocalDir = lookController.LookLocalDir;
+    }
+
+    private Vector3 GetRollWorldDirection()
+    {
+        if (cameraController != null && cameraController.Mode == CameraController.CameraMode.QuarterView)
+        {
+            if (lookController != null)
+            {
+                Vector3 d = lookController.LookWorldDirFlat;
+                d.y = 0f;
+
+                if (d.sqrMagnitude > 0.0001f)
+                    return d.normalized;
+            }
+        }
+        
+        Vector3 dir = transform.forward;
+        dir.y = 0f;
+        return dir;
     }
 }

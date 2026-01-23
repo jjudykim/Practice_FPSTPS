@@ -23,6 +23,9 @@ public class PlayerLookController : MonoBehaviour
     
     public float Pitch { get; private set; }
     public float Yaw { get; private set; }
+    public Vector2 LookLocalDir { get; private set; } = Vector2.up;
+    public float LookDeltaYawDeg { get; private set; } = 0f;
+    public Vector3 LookWorldDirFlat { get; private set; } = Vector3.forward;
 
     private float baseYaw;
     private float yawOffset;
@@ -47,11 +50,16 @@ public class PlayerLookController : MonoBehaviour
         Pitch = pitch;
 
         lastMode = cameraController != null ? cameraController.Mode : CameraController.CameraMode.QuarterView;
+
+        LookLocalDir = Vector2.up;
+        LookDeltaYawDeg = 0f;
+        LookWorldDirFlat = playerRoot.forward;
+        if (LookWorldDirFlat.sqrMagnitude > 0.0001f)
+            LookWorldDirFlat.Normalize();
     }
 
     private void Update()
     {
-
         if (cameraController.Mode != lastMode)
         {
             OnModeChanged(lastMode, cameraController.Mode);
@@ -70,6 +78,7 @@ public class PlayerLookController : MonoBehaviour
         {
             case CameraController.CameraMode.FirstPerson:
                 ApplyFirstPersonRotation();
+                UpdateAimData_FirstPerson();
                 break;
             case CameraController.CameraMode.QuarterView:
                 ApplyQuaterRotation();
@@ -112,18 +121,35 @@ public class PlayerLookController : MonoBehaviour
             return;
 
         if (cameraController.TryGetMouseWorldPointOnPlane(planeY, out Vector3 mouseWorld) == false)
+        {
+            Vector3 f = playerRoot.forward;
+            f.y = 0f;
+            if (f.sqrMagnitude > 0.0001f)
+                f.Normalize();
+
+            LookWorldDirFlat = f;
+            LookLocalDir = Vector2.up;
+            LookDeltaYawDeg = 0f;
             return;
+        }
 
         Vector3 toTarget = mouseWorld - playerRoot.position;
         toTarget.y = 0f;
         
         if (toTarget.sqrMagnitude < 0.0001f)
             return;
+        
+        LookWorldDirFlat = toTarget.normalized;
 
         float targetWorldYaw = Quaternion.LookRotation(toTarget, Vector3.up).eulerAngles.y;
         float bodyYaw = playerRoot.eulerAngles.y;
 
         float delta = Mathf.DeltaAngle(bodyYaw, targetWorldYaw);
+        LookDeltaYawDeg = delta;
+
+        float rad = delta * Mathf.Deg2Rad;
+        LookLocalDir = new Vector2(Mathf.Sin(rad), Mathf.Cos(rad));
+        
  
         float clampedHeadYaw = Mathf.Clamp(delta, -quarterHeadYawLimit, quarterHeadYawLimit);
         headPivot.localRotation = Quaternion.Euler(-clampedHeadYaw, 0f, 0f);
@@ -137,6 +163,20 @@ public class PlayerLookController : MonoBehaviour
         }
     }
     
+    private void UpdateAimData_FirstPerson()
+    {
+        LookDeltaYawDeg = 0f;
+        LookLocalDir = Vector2.up;
+
+        Vector3 fwd = playerRoot.forward;
+        fwd.y = 0f;
+
+        if (fwd.sqrMagnitude < 0.0001f)
+            fwd = Vector3.forward;
+        fwd.Normalize();
+        LookWorldDirFlat = fwd;
+    }
+    
     private void OnModeChanged(CameraController.CameraMode from, CameraController.CameraMode to)
     {
         if (to == CameraController.CameraMode.FirstPerson)
@@ -145,6 +185,8 @@ public class PlayerLookController : MonoBehaviour
             yawOffset = 0f;
             Yaw = baseYaw;
             Pitch = pitch;
+            
+            UpdateAimData_FirstPerson();
         }
         else if (to == CameraController.CameraMode.QuarterView)
         {
@@ -153,6 +195,12 @@ public class PlayerLookController : MonoBehaviour
 
             if (headPivot != null)
                 headPivot.localRotation = Quaternion.identity;
+            
+            LookLocalDir = Vector2.up;
+            LookWorldDirFlat = playerRoot.forward;
+            LookDeltaYawDeg = 0f;
+            if (LookWorldDirFlat.sqrMagnitude > 0.0001f)
+                LookWorldDirFlat.Normalize();
         }
     }
 }
