@@ -1,5 +1,5 @@
+using System;
 using System.Collections;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerCombatController : MonoBehaviour
@@ -17,7 +17,7 @@ public class PlayerCombatController : MonoBehaviour
 
     [Header("Refs")] 
     [SerializeField] private Animator animator;
-    [SerializeField] private GameObject weaponModel;
+    [SerializeField] private jjudy.Weapon currentWeapon;
     [SerializeField] private PlayerLookController lookController;
     [SerializeField] private PlayerMoveController moveController;
     [SerializeField] private string upperBodyLayerName = "UpperBody";
@@ -129,7 +129,7 @@ public class PlayerCombatController : MonoBehaviour
 
     private void ApplyWeaponVisual(bool equipped)
     {
-        weaponModel.SetActive(equipped);
+        currentWeapon.Model.SetActive(equipped);
     }
 
     private void TickAim()
@@ -283,5 +283,27 @@ public class PlayerCombatController : MonoBehaviour
             return true;
         
         return Input.GetMouseButton(1);
+    }
+
+    private void OnAnimatorIK(int layerIndex)
+    {
+        float w = currentWeapon.ikWeight;
+        
+        ApplyIK(AvatarIKGoal.LeftHand, currentWeapon.AttachPoint, w);
+
+        void ApplyIK(AvatarIKGoal goal, Transform target, float ikWeight)
+        {
+            animator.SetIKPosition(goal, target.position);
+            animator.SetIKPositionWeight(goal, ikWeight);
+            
+            animator.SetIKRotation(goal, target.rotation);
+            animator.SetIKRotationWeight(goal, ikWeight);
+        }
+        
+        void SetIKWeightZero()
+        {
+            animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, 0f);
+            animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, 0f);
+        }
     }
 }

@@ -26,9 +26,15 @@ public class PlayerMoveController : MonoBehaviour
     [SerializeField] private float rollDistance = 3.0f;
     [SerializeField] private float rollDuration = 0.8f;
     [SerializeField] private Ease rollEase = Ease.OutQuad;
+
+    [Header("Run Anti-Thrashing")] 
+    [SerializeField] private int runStartStaminaThreshold = 10;
+    [SerializeField] private int runStopStaminaThreshold = 1;
+    [SerializeField] private float runRestartCooldown = 0.35f;
     
     private InputManager input;
     private Camera cam;
+    private float runLockTimer = 0f;
 
     private Tween rollTween;
     private bool isRolling;
@@ -49,11 +55,16 @@ public class PlayerMoveController : MonoBehaviour
 
     void Update()
     {
+        if (runLockTimer > 0f)
+            runLockTimer -= Time.deltaTime;
+        
         if (input.Roll)
         {
             if (isRolling == false)
             {
-                StartRoll();
+                if (TryConsumeStaminaForRoll())
+                    StartRoll();
+
                 return;
             }
         }
@@ -69,9 +80,7 @@ public class PlayerMoveController : MonoBehaviour
         TickMove();
 
         if (input.Reload)
-        {
             Debug.Log("[Player] Reload Trigger!");
-        }
     }
 
     private void TickMove()
@@ -82,10 +91,38 @@ public class PlayerMoveController : MonoBehaviour
         bool isAiming = combatController.IsAiming;
         bool hasMoveInput = Mathf.Abs(input.MoveX) > 0.0001f || Mathf.Abs(input.MoveY) > 0.0001f;
         bool wantRun = input.Run && (isAiming == false);
-        
-        float speed = input.Run ? runSpeed : walkSpeed;
 
-        IsRunning = wantRun && hasMoveInput;
+        int curStamina = Player.Instance.Stats.Resources.CurStamina.Value;
+        
+        bool canRunThisFrame = false;
+
+        if (wantRun && hasMoveInput)
+        {
+            if (IsRunning)
+            {
+                if (curStamina >= runStopStaminaThreshold)
+                    canRunThisFrame = TryConsumeStaminaForRun(Time.deltaTime);
+                else
+                {
+                    canRunThisFrame = false;
+                    runLockTimer = runRestartCooldown;
+                }
+            }
+            else
+            {
+                if (runLockTimer <= 0f && curStamina >= runStartStaminaThreshold)
+                    canRunThisFrame = TryConsumeStaminaForRun(Time.deltaTime);
+                else
+                    canRunThisFrame = false;
+            }
+
+            canRunThisFrame = TryConsumeStaminaForRun(Time.deltaTime);
+        }
+        
+        IsRunning = wantRun && hasMoveInput && canRunThisFrame;
+        Player.Instance.IsRunning = IsRunning;
+        
+        float speed = IsRunning ? runSpeed : walkSpeed;
         
         transform.position += moveDir * (speed * Time.deltaTime);
 
@@ -127,6 +164,7 @@ public class PlayerMoveController : MonoBehaviour
     private void StartRoll()
     {
         isRolling = true;
+        Player.Instance.IsRolling = true;
 
         if (rollTween != null && rollTween.IsActive())
             rollTween.Kill();
@@ -153,6 +191,8 @@ public class PlayerMoveController : MonoBehaviour
                              {
                                  isRolling = false;
                                  rollTween = null;
+
+                                 Player.Instance.IsRolling = false;
                              });
     }
 
@@ -185,4 +225,7 @@ public class PlayerMoveController : MonoBehaviour
         dir.y = 0f;
         return dir;
     }
+
+    private bool TryConsumeStaminaForRun(float dt) => Player.Instance.TryConsumeStaminaForRun(dt);
+    private bool TryConsumeStaminaForRoll() => Player.Instance.TryConsumeStaminaForDodge();
 }
