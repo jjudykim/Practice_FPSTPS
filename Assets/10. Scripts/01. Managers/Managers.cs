@@ -5,6 +5,7 @@ public class Managers : SingletonBase<Managers>
 {
     public GameManager Game { get; private set; }
     public InputManager Input { get; private set; }
+    public UserDataManager UserData { get; private set; }
 
     protected override void OnInitialize()
     {
@@ -12,6 +13,7 @@ public class Managers : SingletonBase<Managers>
 
         Game = new GameManager();
         Input = new InputManager();
+        UserData = new UserDataManager();
 
         Game.Awake();
     }
