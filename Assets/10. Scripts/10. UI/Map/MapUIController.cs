@@ -61,7 +61,7 @@ public class MapUIController :  MonoBehaviour
     private void Start()
     {
         if (actionRouter == null)
-            actionRouter = GameManager.Instance.GetComponent<MapNodeActionRouter>();
+            actionRouter = FindFirstObjectByType<MapNodeActionRouter>();
     }
 
     public void Toggle(MapGraph graph, MapUIMode mode)
@@ -167,7 +167,7 @@ public class MapUIController :  MonoBehaviour
         }
 
         if (actionRouter != null)
-            actionRouter.SetMapSeed(GameManager.Instance.MapCache.CurrentSeed);
+            actionRouter.SetMapSeed(Managers.Instance.Game.MapCache.CurrentSeed);
         
         SnapToStart();
         
@@ -290,11 +290,11 @@ public class MapUIController :  MonoBehaviour
     {
         if (currentMode == MapUIMode.ViewOnly)
             return;
-        
-        if (actionRouter == null)
-            actionRouter = GameManager.Instance.GetComponent<MapNodeActionRouter>();
 
-        var cache = GameManager.Instance.MapCache;
+        if (actionRouter == null)
+            actionRouter = FindFirstObjectByType<MapNodeActionRouter>();
+
+        var cache = Managers.Instance.Game.MapCache;
         if (cache == null || cache.CurrentGraph == null)
             return;
 

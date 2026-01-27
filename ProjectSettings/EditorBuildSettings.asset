@@ -6,55 +6,43 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/0. Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
-    path: Assets/0. Scenes/Debug/01. MapGenerator.unity
+    path: Assets/00. Scenes/Debug/01. MapGenerator.unity
     guid: 6a265a07cf96b5e4f9e081819edbef29
   - enabled: 1
-    path: Assets/0. Scenes/TestMapScene.unity
+    path: Assets/00. Scenes/Debug/04. Town.unity
+    guid: 4ad692cc80ef87d4a8581b08565a070f
+  - enabled: 1
+    path: Assets/00. Scenes/TestMapScene.unity
     guid: 86e060feac7276a4e9679ae362ad9b7b
   - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestBossScene1.unity
+    path: Assets/00. Scenes/TestMapScenes/TestBossScene1.unity
     guid: 3dd1d7d4634cc5d43a951f9fd8179320
   - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestBossScene2.unity
+    path: Assets/00. Scenes/TestMapScenes/TestBossScene2.unity
     guid: 022a70f46317cbf47980c9349dad3b46
   - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestBossScene3.unity
+    path: Assets/00. Scenes/TestMapScenes/TestBossScene3.unity
     guid: eba7bfa2ab341574cb383cb8b1058e53
   - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestCombatScene1.unity
+    path: Assets/00. Scenes/TestMapScenes/TestCombatScene1.unity
     guid: 71b63828180d376498195b3e19057871
   - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestCombatScene2.unity
-    guid: 47a3423844278014b957826f1ef55595
-  - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestCombatScene3.unity
-    guid: a9e4eee66a6dcb84ba43cf0cc58e052e
-  - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestCombatScene4.unity
-    guid: 5660bce40da6f38439269ba8e52ea4cd
-  - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestCombatScene5.unity
-    guid: 21a47dd783cc91f4b8d315250d5ca192
-  - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestRewardScene1.unity
+    path: Assets/00. Scenes/TestMapScenes/TestRewardScene1.unity
     guid: 910bce53b6e6d2e47b86040065bee4ee
   - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestRewardScene2.unity
+    path: Assets/00. Scenes/TestMapScenes/TestRewardScene2.unity
     guid: e23ad366ab3759743b7692ace5be9215
   - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestRewardScene3.unity
+    path: Assets/00. Scenes/TestMapScenes/TestRewardScene3.unity
     guid: 0b719d0b84504844f88c952a8d221499
   - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestShopScene1.unity
+    path: Assets/00. Scenes/TestMapScenes/TestShopScene1.unity
     guid: 030e3ee95e0e957448bf21ee64810938
   - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestShopScene2.unity
+    path: Assets/00. Scenes/TestMapScenes/TestShopScene2.unity
     guid: 3767c2c358f723845bbddb97ef113175
   - enabled: 1
-    path: Assets/0. Scenes/TestMapScenes/TestShopScene3.unity
+    path: Assets/00. Scenes/TestMapScenes/TestShopScene3.unity
     guid: 653eaf4d73cf99b4ca13e7af41fcd5f5
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

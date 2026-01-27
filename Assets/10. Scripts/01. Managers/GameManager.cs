@@ -4,15 +4,13 @@ using System.IO;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public class GameManager : SingletonBase<GameManager>
+public class GameManager
 {
     public MapRunCache MapCache { get; private set; } = new MapRunCache();
     public bool HasActiveMap => MapCache != null && MapCache.HasGraph;
     
-    protected override void Awake()
+    public void Awake()
     {
-        base.Awake();
-        
         if (MapCache == null)
             MapCache = new MapRunCache();
     }

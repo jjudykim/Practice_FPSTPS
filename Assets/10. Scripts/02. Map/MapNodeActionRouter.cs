@@ -27,7 +27,7 @@ public class MapNodeActionRouter : MonoBehaviour
         if (string.IsNullOrEmpty(sceneName))
             return;
         
-        GameManager.Instance.SelectNextNodeAndMove(node.Id);
+        Managers.Instance.Game.SelectNextNodeAndMove(node.Id);
         SceneManager.LoadScene(sceneName);
     }
 
