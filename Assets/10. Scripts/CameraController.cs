@@ -29,6 +29,8 @@ public class CameraController : MonoBehaviour
     [Header("First Person Settings")]
     [SerializeField] private float firstPersonFov = 65f;
     [SerializeField] private bool lockCursorInFirstPerson = true;
+    [SerializeField] private float aimForwardOffset = 0.06f;
+    [SerializeField] private float aimFirstPersonFov = 50f;
 
     [Header("Quarter View Settings")] 
     [SerializeField] private float quarterFov = 55f;
@@ -40,6 +42,7 @@ public class CameraController : MonoBehaviour
 
     private Camera cam;
     private Quaternion fixedQuaterRotation;
+    private bool isAiming = false;
 
     private void Awake()
     {
@@ -70,7 +73,18 @@ public class CameraController : MonoBehaviour
                 break;
         }
     }
-    
+
+    public void SetAiming(bool aiming)
+    {
+        if (currentMode != CameraMode.FirstPerson)
+        {
+            isAiming = false;
+            return;
+        }
+
+        isAiming = aiming;
+    }
+
     private void TickFirstPerson()
     {
         if (lookController == null)
@@ -78,17 +92,29 @@ public class CameraController : MonoBehaviour
         
         float targetYaw = lookController.Yaw;
         float targetPitch = lookController.Pitch;
-        
-        if (firstPersonAnchor != null)
-            transform.position = Vector3.Lerp(transform.position
-                                            , firstPersonAnchor.position
-                                            , Time.deltaTime * positionSmooth);
-        
+
         Quaternion targetRot = Quaternion.Euler(targetPitch, targetYaw, 0f);
         
-        transform.rotation = Quaternion.Slerp(transform.rotation
-                                            , targetRot
-                                            , Time.deltaTime * positionSmooth);
+        if (firstPersonAnchor != null)
+        {
+            Vector3 targetPos = firstPersonAnchor.position;
+
+            if (isAiming)
+            {
+                Vector3 forward = targetRot * Vector3.forward;
+                targetPos += forward * aimForwardOffset;
+            }
+            
+            transform.position = Vector3.Lerp(transform.position, targetPos , Time.deltaTime * positionSmooth);
+        }
+        
+        transform.rotation = Quaternion.Slerp(transform.rotation , targetRot, Time.deltaTime * positionSmooth);
+        
+        if (cam != null)
+        {
+            float targetFov = isAiming ? aimFirstPersonFov : firstPersonFov;
+            cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFov, Time.deltaTime * positionSmooth);
+        }
     }
     
     private void TickQuaterView()
@@ -115,7 +141,10 @@ public class CameraController : MonoBehaviour
     {
         currentMode = (currentMode == CameraMode.FirstPerson) ? CameraMode.QuarterView :  CameraMode.FirstPerson;
         ApplyModeImmediate(currentMode);
-        
+
+        if (currentMode == CameraMode.FirstPerson)
+            isAiming = false;
+            
         OnModeChanged?.Invoke(currentMode);
     }
     

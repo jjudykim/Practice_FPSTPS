@@ -25,8 +25,14 @@ public class PlayerCombatController : MonoBehaviour
     [SerializeField] private PlayerMoveController moveController;
     [SerializeField] private CameraController cameraController;
     
-    [Header("Animation Layer")]
-    [SerializeField] private string upperBodyLayerName = "UpperBody";
+    [Header("UpperBody Layer Weights")]
+    [Header("IK Weights")]
+    [SerializeField, Range(0f, 1f)] private float ikWeightEquipped = 0.6f; // 장착 기본 IK
+    [SerializeField, Range(0f, 1f)] private float ikWeightAiming = 1.0f;   // 조준 IK
+    
+    [SerializeField, Range(0f, 1f)] private float upperBodyWeightEquipped = 1.0f;
+    [SerializeField, Range(0f, 1f)] private float upperBodyWeightAiming = 1.0f;
+    [SerializeField] private string upperBodyLayerName = "UpperBody Layer";
     
     [Header("UI")]
     [SerializeField] private CrosshairUI crosshairUI;
@@ -67,6 +73,8 @@ public class PlayerCombatController : MonoBehaviour
     {
         RefreshCrosshairVisibility();
         PushWeaponContext();
+        
+        RefreshRigWeights();
     }
 
     private void Awake()
@@ -89,7 +97,6 @@ public class PlayerCombatController : MonoBehaviour
         if (animator != null && string.IsNullOrEmpty(upperBodyLayerName) == false)
             upperBodyLayerIndex = animator.GetLayerIndex(upperBodyLayerName);
         
-        ApplyUpperBodyLayerWeight(IsWeaponEquipped);
         ApplyAnimatorBools();
         ApplyAimDirectionParams();
         
@@ -151,13 +158,12 @@ public class PlayerCombatController : MonoBehaviour
             if (IsAiming)
                 SetAiming(false);
         }
-
-        ApplyUpperBodyLayerWeight(IsWeaponEquipped || IsAiming);
+        
         ApplyAnimatorBools();
-        
         PushWeaponContext();
-        
         RefreshCrosshairVisibility();
+
+        RefreshRigWeights();
         
         Debug.Log($"[PlayerCombatCtrl] ::: Equip = {IsWeaponEquipped}");
     }
@@ -181,9 +187,13 @@ public class PlayerCombatController : MonoBehaviour
         IsAiming = aiming;
         
         ApplyAnimatorBools();
-        ApplyUpperBodyLayerWeight(IsWeaponEquipped && IsAiming);
-
         PushWeaponContext();
+        RefreshCrosshairVisibility();
+        
+        RefreshRigWeights();
+
+        cameraController.SetAiming(IsAiming);
+        
         ApplyAimDirectionParams();
         
         Debug.Log($"[PlayerCombatCtrl] ::: Aiming = {IsAiming}");
@@ -235,9 +245,12 @@ public class PlayerCombatController : MonoBehaviour
             Debug.Log("[PlayerCombatCtrl] ::: Fire Down");
             crosshairUI.OnFired();
         }
-        
+
         if (fireHeld)
+        {
+            animator.SetTrigger(TRIGGER_FIRE);
             currentWeapon.TriggerHold();
+        }
 
         if (fireUp)
             currentWeapon.TriggerUp();
@@ -272,15 +285,16 @@ public class PlayerCombatController : MonoBehaviour
         animator.SetBool(IS_AIMING, IsAiming);
     }
 
-    private void ApplyUpperBodyLayerWeight(bool enabled)
+    private void ApplyUpperBodyLayerWeight(float weight01)
     {
         if (animator == null)
             return;
 
         if (upperBodyLayerIndex < 0)
             return;
-        
-        animator.SetLayerWeight(upperBodyLayerIndex, enabled ? 1f : 0f);
+
+        float w = Mathf.Clamp01(weight01);
+        animator.SetLayerWeight(upperBodyLayerIndex, w);
     }
 
     private bool GetEquipToggleDown() => input.OnWeapon;
@@ -361,5 +375,23 @@ public class PlayerCombatController : MonoBehaviour
         
         if (visible == false && IsAiming)
             SetAiming(false);
+    }
+
+    private void RefreshRigWeights()
+    {
+        if (IsWeaponEquipped == false)
+        {
+            ApplyUpperBodyLayerWeight(0f);
+            return;
+        }
+
+        if (IsAiming)
+        {
+            ApplyUpperBodyLayerWeight(upperBodyWeightAiming);
+        }
+        else
+        {
+            ApplyUpperBodyLayerWeight(upperBodyWeightEquipped);
+        }
     }
 }
