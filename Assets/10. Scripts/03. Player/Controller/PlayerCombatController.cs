@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class PlayerCombatController : MonoBehaviour
 {
@@ -17,15 +18,22 @@ public class PlayerCombatController : MonoBehaviour
 
     [Header("Refs")] 
     [SerializeField] private Animator animator;
-    [SerializeField] private jjudy.Weapon currentWeapon;
+    [SerializeField] private WeaponRoot weaponRoot;
+    [SerializeField] private WeaponBase weaponPrefabForTest;
+    [SerializeField] private MonoBehaviour aimProviderSource;
     [SerializeField] private PlayerLookController lookController;
     [SerializeField] private PlayerMoveController moveController;
+    [SerializeField] private CameraController cameraController;
+    
+    [Header("Animation Layer")]
     [SerializeField] private string upperBodyLayerName = "UpperBody";
     
-    [SerializeField] private bool aimHold = true;
-    [SerializeField] private float fireCooldown = 0.12f;
-    [SerializeField] private float reloadDuration = 1.2f;
+    [Header("UI")]
+    [SerializeField] private CrosshairUI crosshairUI;
 
+    private IAimProvider aimProvider;
+    private WeaponBase currentWeapon;
+    
     public bool IsWeaponEquipped { get; private set; }
     public bool IsAiming { get; private set; }
     public bool IsReloading { get; private set; }
@@ -34,34 +42,58 @@ public class PlayerCombatController : MonoBehaviour
     private bool IsBusyByRunForFire => (moveController != null) && moveController.IsRunning;
 
     public bool CanFire => IsWeaponEquipped
-                           && (IsReloading == false) 
                            && (IsBusyByRoll == false) 
                            && (IsBusyByRunForFire == false);
 
     public bool CanAim => IsWeaponEquipped
-                          && (IsReloading == false)
                           && (IsBusyByRoll == false);
     
     private InputManager input;
     private int upperBodyLayerIndex = -1;
 
-    private float lastFireTime = -999f;
-    private Coroutine reloadCo;
+    private void OnEnable()
+    {
+        cameraController.OnModeChanged += HandleCameraModeChanged;
+        
+        RefreshCrosshairVisibility();
+    }
+
+    private void OnDisable()
+    {
+        cameraController.OnModeChanged -= HandleCameraModeChanged;
+    }
+
+    private void HandleCameraModeChanged(CameraController.CameraMode mode)
+    {
+        RefreshCrosshairVisibility();
+        PushWeaponContext();
+    }
 
     private void Awake()
     {
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
 
+        if (cameraController == null)
+            cameraController = Camera.main.GetComponent<CameraController>();
+        
         input = Managers.Instance.Input;
 
+        aimProvider = aimProviderSource as IAimProvider;
+        if (aimProvider == null)
+            Debug.LogError("[PlayerCombatCtrl] ::: aimProviderSource is not IAimProvider");
+        
+        if (weaponRoot == null)
+            Debug.LogError("[PlayerCombatCtrl] ::: weaponRoot is null.");
+        
         if (animator != null && string.IsNullOrEmpty(upperBodyLayerName) == false)
             upperBodyLayerIndex = animator.GetLayerIndex(upperBodyLayerName);
-
-        ApplyWeaponVisual(IsWeaponEquipped);
+        
         ApplyUpperBodyLayerWeight(IsWeaponEquipped);
         ApplyAnimatorBools();
         ApplyAimDirectionParams();
+        
+        PushWeaponContext();
     }
     
     private void Update()
@@ -84,8 +116,8 @@ public class PlayerCombatController : MonoBehaviour
             if (IsAiming)
                 SetAiming(false);
             
-            if (IsReloading)
-                CancelReload();
+            if (currentWeapon != null)
+                currentWeapon.CancelReload();
             
             ApplyAimDirectionParams();
             return;
@@ -94,9 +126,7 @@ public class PlayerCombatController : MonoBehaviour
         TickAim();
 
         if (GetReloadDown())
-        {
             TryReload();
-        }
 
         TickFire();
         
@@ -107,29 +137,29 @@ public class PlayerCombatController : MonoBehaviour
     {
         IsWeaponEquipped = !IsWeaponEquipped;
 
-        ApplyWeaponVisual(IsWeaponEquipped);
-        ApplyUpperBodyLayerWeight(IsWeaponEquipped);
-
-        ApplyAnimatorBools();
-
         if (IsWeaponEquipped)
+        {
+            currentWeapon = weaponRoot.Equip(weaponPrefabForTest);
             animator.SetTrigger(TRIGGER_EQUIP);
+        }
         else
         {
+            weaponRoot.Unequip();
+            currentWeapon = null;
             animator.SetTrigger(TRIGGER_UNEQUIP);
 
             if (IsAiming)
                 SetAiming(false);
-
-            CancelReload();
         }
 
+        ApplyUpperBodyLayerWeight(IsWeaponEquipped || IsAiming);
+        ApplyAnimatorBools();
+        
+        PushWeaponContext();
+        
+        RefreshCrosshairVisibility();
+        
         Debug.Log($"[PlayerCombatCtrl] ::: Equip = {IsWeaponEquipped}");
-    }
-
-    private void ApplyWeaponVisual(bool equipped)
-    {
-        currentWeapon.Model.SetActive(equipped);
     }
 
     private void TickAim()
@@ -141,25 +171,36 @@ public class PlayerCombatController : MonoBehaviour
             return;
         }
 
-        if (aimHold)
-        {
-            bool wantAim = GetAimHeld();
-            if (wantAim != IsAiming)
-                SetAiming(wantAim);
-        }
+        bool wantAim = GetAimHeld();
+        if (wantAim != IsAiming)
+            SetAiming(wantAim);
     }
 
     private void SetAiming(bool aiming)
     {
         IsAiming = aiming;
+        
         ApplyAnimatorBools();
-        ApplyUpperBodyLayerWeight(IsWeaponEquipped || IsAiming);
+        ApplyUpperBodyLayerWeight(IsWeaponEquipped && IsAiming);
 
+        PushWeaponContext();
         ApplyAimDirectionParams();
         
         Debug.Log($"[PlayerCombatCtrl] ::: Aiming = {IsAiming}");
     }
-    
+
+    private void PushWeaponContext()
+    {
+        if (currentWeapon == null)
+            return;
+        
+        currentWeapon.UpdateContext(new WeaponContext(aimProvider
+                                                    , transform
+                                                    , IsAiming));
+        
+        crosshairUI.SetContext(currentWeapon.Data, IsAiming);
+    }
+
     private void ApplyAimDirectionParams()
     {
         if (animator == null)
@@ -182,14 +223,24 @@ public class PlayerCombatController : MonoBehaviour
         if (GetFireHeld() == false)
             return;
 
-        if (fireCooldown > 0f && Time.time < lastFireTime + fireCooldown)
-            return;
+        bool fireDown = GetFireDown();
+        bool fireHeld = GetFireHeld();
+        bool fireUp = GetFireUp();
 
-        lastFireTime = Time.time;
+        if (fireDown)
+        {
+            animator.SetTrigger(TRIGGER_FIRE);
+            currentWeapon.TriggerDown();
+            
+            Debug.Log("[PlayerCombatCtrl] ::: Fire Down");
+            crosshairUI.OnFired();
+        }
         
-        animator.SetTrigger(TRIGGER_FIRE);
-        
-        Debug.Log("[PlayerCombatCtrl] ::: Fire!!!!!!");
+        if (fireHeld)
+            currentWeapon.TriggerHold();
+
+        if (fireUp)
+            currentWeapon.TriggerUp();
     }
 
     private void TryReload()
@@ -200,50 +251,16 @@ public class PlayerCombatController : MonoBehaviour
         if (IsWeaponEquipped == false)
             return;
 
-        if (IsReloading)
+        if (currentWeapon == null)
             return;
 
         if (IsAiming)
             SetAiming(false);
 
-        IsReloading = true;
-        ApplyAnimatorBools();
-        
         animator.SetTrigger(TRIGGER_RELOAD);
-
-        reloadCo = StartCoroutine(CoReload());
+        currentWeapon.Reload();
+        
         Debug.Log("[PlayerCombatCtrl] ::: Reload Start");
-    }
-
-    private IEnumerator CoReload()
-    {
-        float t = 0f;
-        while (t < reloadDuration)
-        {
-            t += Time.deltaTime;
-            yield return null;
-        }
-
-        IsReloading = false;
-        ApplyAnimatorBools();
-
-        reloadCo = null;
-        Debug.Log("[PlayerCombatCtrl] ::: Reload End");
-    }
-
-    private void CancelReload()
-    {
-        if (reloadCo != null)
-        {
-            StopCoroutine(reloadCo);
-            reloadCo = null;
-        }
-
-        if (IsReloading)
-        {
-            IsReloading = false;
-            ApplyAnimatorBools();
-        }
     }
 
     private void ApplyAnimatorBools()
@@ -269,26 +286,46 @@ public class PlayerCombatController : MonoBehaviour
     private bool GetEquipToggleDown() => input.OnWeapon;
     private bool GetReloadDown() => input.Reload;
 
+    private bool GetFireDown()
+    {
+        return Input.GetMouseButtonDown(0);
+    }
+
+    private bool GetFireUp()
+    {
+        return Input.GetMouseButtonUp(0);
+    }
+
     private bool GetFireHeld()
     {
         if (input.Shoot)
             return true;
 
-        return Input.GetMouseButton(0);
+        return input.Shoot;
     }
 
     private bool GetAimHeld()
     {
         if (input.Aiming)
             return true;
-        
-        return Input.GetMouseButton(1);
+
+        return input.Aiming;
     }
 
     private void OnAnimatorIK(int layerIndex)
     {
+        if (animator == null)
+            return;
+
+        if (IsWeaponEquipped == false
+            || currentWeapon == null
+            || currentWeapon.AttachPoint == null)
+        {
+            SetIKWeightZero();
+            return;
+        }
+
         float w = currentWeapon.ikWeight;
-        
         ApplyIK(AvatarIKGoal.LeftHand, currentWeapon.AttachPoint, w);
 
         void ApplyIK(AvatarIKGoal goal, Transform target, float ikWeight)
@@ -305,5 +342,24 @@ public class PlayerCombatController : MonoBehaviour
             animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, 0f);
             animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, 0f);
         }
+    }
+
+    private void RefreshCrosshairVisibility()
+    {
+        if (crosshairUI == null)
+            return;
+
+        bool visible = false;
+
+        if (cameraController != null)
+        {
+            visible = (cameraController.Mode == CameraController.CameraMode.FirstPerson) 
+                      && IsWeaponEquipped;
+        }
+        
+        crosshairUI.gameObject.SetActive(visible);
+        
+        if (visible == false && IsAiming)
+            SetAiming(false);
     }
 }

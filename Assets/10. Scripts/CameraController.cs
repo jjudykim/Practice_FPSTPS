@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -8,6 +9,8 @@ public class CameraController : MonoBehaviour
         FirstPerson,
         QuarterView
     }
+
+    public event Action<CameraMode> OnModeChanged;
 
     [Header("Targets")] 
     [SerializeField] private PlayerLookController lookController;
@@ -45,6 +48,8 @@ public class CameraController : MonoBehaviour
 
         ApplyModeImmediate(currentMode);
         fixedQuaterRotation = Quaternion.Euler(fixedQuarterRot);
+
+        OnModeChanged?.Invoke(currentMode);
     }
 
     private void LateUpdate()
@@ -110,6 +115,8 @@ public class CameraController : MonoBehaviour
     {
         currentMode = (currentMode == CameraMode.FirstPerson) ? CameraMode.QuarterView :  CameraMode.FirstPerson;
         ApplyModeImmediate(currentMode);
+        
+        OnModeChanged?.Invoke(currentMode);
     }
     
     private void ApplyModeImmediate(CameraMode mode)
