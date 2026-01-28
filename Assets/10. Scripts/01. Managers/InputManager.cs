@@ -48,8 +48,10 @@ public class InputManager
     public float POVY { get; private set; }
     
     // Shooting
-    public bool Shoot { get; private set; }
-    
+    public bool FireDown { get; private set; }
+    public bool Fire { get; private set; }
+    public bool FireUp { get; private set; }
+
     // Shooting
     public bool Aiming { get; private set; }
 
@@ -69,7 +71,9 @@ public class InputManager
             Roll = Input.GetKeyDown(KeyCode.Space);
             OnWeapon = Input.GetKeyDown(KeyCode.F);
             Reload = Input.GetKeyDown(KeyCode.R);
-            Shoot = Input.GetMouseButton(0);
+            FireDown = Input.GetMouseButtonDown(0);
+            Fire = Input.GetMouseButton(0);
+            FireUp = Input.GetMouseButtonUp(0);
             Aiming = Input.GetMouseButton(1);
             
             POVX = Input.GetAxisRaw("Mouse X");
@@ -87,7 +91,7 @@ public class InputManager
             MoveX = 0f;
             MoveY = 0f;
             Run = false;
-            Shoot = false;
+            Fire = false;
             Aiming = false;
             POVX = 0f;
             POVY = 0f;

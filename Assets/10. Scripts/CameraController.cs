@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -8,6 +9,8 @@ public class CameraController : MonoBehaviour
         FirstPerson,
         QuarterView
     }
+
+    public event Action<CameraMode> OnModeChanged;
 
     [Header("Targets")] 
     [SerializeField] private PlayerLookController lookController;
@@ -20,12 +23,17 @@ public class CameraController : MonoBehaviour
     private CameraMode currentMode;
     public CameraMode Mode => currentMode;
     
+    [Header("Cursor")]
+    [SerializeField] private Texture2D normalCursor;
+    
     [Header("Smooting")]
     [SerializeField] private float positionSmooth = 18f;
     
     [Header("First Person Settings")]
     [SerializeField] private float firstPersonFov = 65f;
     [SerializeField] private bool lockCursorInFirstPerson = true;
+    [SerializeField] private float aimForwardOffset = 0.06f;
+    [SerializeField] private float aimFirstPersonFov = 50f;
 
     [Header("Quarter View Settings")] 
     [SerializeField] private float quarterFov = 55f;
@@ -37,14 +45,18 @@ public class CameraController : MonoBehaviour
 
     private Camera cam;
     private Quaternion fixedQuaterRotation;
+    private bool isAiming = false;
+    private bool hideCursorInQuarterView = false;
 
     private void Awake()
     {
         cam = Camera.main;
         currentMode = startMode;
+        
+        fixedQuaterRotation = Quaternion.Euler(fixedQuarterRot);
 
         ApplyModeImmediate(currentMode);
-        fixedQuaterRotation = Quaternion.Euler(fixedQuarterRot);
+        OnModeChanged?.Invoke(currentMode);
     }
 
     private void LateUpdate()
@@ -65,7 +77,15 @@ public class CameraController : MonoBehaviour
                 break;
         }
     }
-    
+
+    public void SetQuarterViewCursorHidden(bool hidden)
+    {
+        hideCursorInQuarterView = hidden;
+        
+        if (currentMode == CameraMode.QuarterView)
+            ApplyModeImmediate(currentMode);
+    }
+
     private void TickFirstPerson()
     {
         if (lookController == null)
@@ -73,17 +93,29 @@ public class CameraController : MonoBehaviour
         
         float targetYaw = lookController.Yaw;
         float targetPitch = lookController.Pitch;
-        
-        if (firstPersonAnchor != null)
-            transform.position = Vector3.Lerp(transform.position
-                                            , firstPersonAnchor.position
-                                            , Time.deltaTime * positionSmooth);
-        
+
         Quaternion targetRot = Quaternion.Euler(targetPitch, targetYaw, 0f);
         
-        transform.rotation = Quaternion.Slerp(transform.rotation
-                                            , targetRot
-                                            , Time.deltaTime * positionSmooth);
+        if (firstPersonAnchor != null)
+        {
+            Vector3 targetPos = firstPersonAnchor.position;
+
+            if (isAiming)
+            {
+                Vector3 forward = targetRot * Vector3.forward;
+                targetPos += forward * aimForwardOffset;
+            }
+            
+            transform.position = Vector3.Lerp(transform.position, targetPos , Time.deltaTime * positionSmooth);
+        }
+        
+        transform.rotation = Quaternion.Slerp(transform.rotation , targetRot, Time.deltaTime * positionSmooth);
+        
+        if (cam != null)
+        {
+            float targetFov = isAiming ? aimFirstPersonFov : firstPersonFov;
+            cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFov, Time.deltaTime * positionSmooth);
+        }
     }
     
     private void TickQuaterView()
@@ -110,6 +142,11 @@ public class CameraController : MonoBehaviour
     {
         currentMode = (currentMode == CameraMode.FirstPerson) ? CameraMode.QuarterView :  CameraMode.FirstPerson;
         ApplyModeImmediate(currentMode);
+
+        if (currentMode == CameraMode.FirstPerson)
+            isAiming = false;
+        
+        OnModeChanged?.Invoke(currentMode);
     }
     
     private void ApplyModeImmediate(CameraMode mode)
@@ -128,7 +165,11 @@ public class CameraController : MonoBehaviour
         else
         {
             Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            bool showCursor = !hideCursorInQuarterView;
+            Cursor.visible = showCursor;
+            
+            if (showCursor)
+                Cursor.SetCursor(normalCursor, new Vector2(0, 0), CursorMode.Auto);
         }
     }
     

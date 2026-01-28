@@ -2376,7 +2376,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1462418958698305418, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 113.49
       objectReference: {fileID: 0}
     - target: {fileID: 1462418958698305418, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -2560,7 +2560,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4554256772171786409, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 106.96
       objectReference: {fileID: 0}
     - target: {fileID: 4554256772171786409, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -2596,7 +2596,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5544584969148571867, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 106.96
       objectReference: {fileID: 0}
     - target: {fileID: 5544584969148571867, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -2610,6 +2610,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: SaveSlot_2
       objectReference: {fileID: 0}
+    - target: {fileID: 7749425604932786555, guid: fffdf44902118de4ba655c46a848676d, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+    - target: {fileID: 7749425604932786555, guid: fffdf44902118de4ba655c46a848676d, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4938,7 +4946,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1462418958698305418, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 113.49
       objectReference: {fileID: 0}
     - target: {fileID: 1462418958698305418, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -5122,7 +5130,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4554256772171786409, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 106.96
       objectReference: {fileID: 0}
     - target: {fileID: 4554256772171786409, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -5158,7 +5166,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5544584969148571867, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 106.96
       objectReference: {fileID: 0}
     - target: {fileID: 5544584969148571867, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -5172,6 +5180,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: SaveSlot_0
       objectReference: {fileID: 0}
+    - target: {fileID: 7749425604932786555, guid: fffdf44902118de4ba655c46a848676d, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+    - target: {fileID: 7749425604932786555, guid: fffdf44902118de4ba655c46a848676d, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -5493,7 +5509,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1462418958698305418, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 113.49
       objectReference: {fileID: 0}
     - target: {fileID: 1462418958698305418, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -5677,7 +5693,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4554256772171786409, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 106.96
       objectReference: {fileID: 0}
     - target: {fileID: 4554256772171786409, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -5713,7 +5729,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5544584969148571867, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 106.96
       objectReference: {fileID: 0}
     - target: {fileID: 5544584969148571867, guid: fffdf44902118de4ba655c46a848676d, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -5727,6 +5743,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: SaveSlot_1
       objectReference: {fileID: 0}
+    - target: {fileID: 7749425604932786555, guid: fffdf44902118de4ba655c46a848676d, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+    - target: {fileID: 7749425604932786555, guid: fffdf44902118de4ba655c46a848676d, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
