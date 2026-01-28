@@ -1648,6 +1648,10 @@ PrefabInstance:
       propertyPath: firstPersonAnchor
       value: 
       objectReference: {fileID: 1728687934}
+    - target: {fileID: 3929937515531814791, guid: a925f5d688c239246b891e50c78fbe82, type: 3}
+      propertyPath: near clip plane
+      value: 0.1
+      objectReference: {fileID: 0}
     - target: {fileID: 5014494143651283987, guid: a925f5d688c239246b891e50c78fbe82, type: 3}
       propertyPath: m_Name
       value: Main Camera

@@ -23,6 +23,9 @@ public class CameraController : MonoBehaviour
     private CameraMode currentMode;
     public CameraMode Mode => currentMode;
     
+    [Header("Cursor")]
+    [SerializeField] private Texture2D normalCursor;
+    
     [Header("Smooting")]
     [SerializeField] private float positionSmooth = 18f;
     
@@ -43,15 +46,16 @@ public class CameraController : MonoBehaviour
     private Camera cam;
     private Quaternion fixedQuaterRotation;
     private bool isAiming = false;
+    private bool hideCursorInQuarterView = false;
 
     private void Awake()
     {
         cam = Camera.main;
         currentMode = startMode;
-
-        ApplyModeImmediate(currentMode);
+        
         fixedQuaterRotation = Quaternion.Euler(fixedQuarterRot);
 
+        ApplyModeImmediate(currentMode);
         OnModeChanged?.Invoke(currentMode);
     }
 
@@ -74,15 +78,12 @@ public class CameraController : MonoBehaviour
         }
     }
 
-    public void SetAiming(bool aiming)
+    public void SetQuarterViewCursorHidden(bool hidden)
     {
-        if (currentMode != CameraMode.FirstPerson)
-        {
-            isAiming = false;
-            return;
-        }
-
-        isAiming = aiming;
+        hideCursorInQuarterView = hidden;
+        
+        if (currentMode == CameraMode.QuarterView)
+            ApplyModeImmediate(currentMode);
     }
 
     private void TickFirstPerson()
@@ -144,7 +145,7 @@ public class CameraController : MonoBehaviour
 
         if (currentMode == CameraMode.FirstPerson)
             isAiming = false;
-            
+        
         OnModeChanged?.Invoke(currentMode);
     }
     
@@ -164,7 +165,11 @@ public class CameraController : MonoBehaviour
         else
         {
             Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            bool showCursor = !hideCursorInQuarterView;
+            Cursor.visible = showCursor;
+            
+            if (showCursor)
+                Cursor.SetCursor(normalCursor, new Vector2(0, 0), CursorMode.Auto);
         }
     }
     

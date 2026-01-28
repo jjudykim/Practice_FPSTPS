@@ -25,6 +25,13 @@ public class PlayerCombatController : MonoBehaviour
     [SerializeField] private PlayerMoveController moveController;
     [SerializeField] private CameraController cameraController;
     
+    [Header("QuarterView Aim Facing")]
+    [SerializeField] private float quarterAimTurnSpeed = 18f;     // 회전 보간 속도
+    [SerializeField] private float quarterAimMaxDistance = 200f;  // 조준점 레이 최대 거리
+    [SerializeField] private LayerMask quarterAimMask = ~0;
+    [SerializeField] private bool rotateOnlyWhenAiming = true;   // true면 Aim 중에만 회전, false면 무기 장착 중이면 항상 회전
+
+    
     [Header("UpperBody Layer Weights")]
     [Header("IK Weights")]
     [SerializeField, Range(0f, 1f)] private float ikWeightEquipped = 0.6f; // 장착 기본 IK
@@ -56,6 +63,11 @@ public class PlayerCombatController : MonoBehaviour
     
     private InputManager input;
     private int upperBodyLayerIndex = -1;
+
+    // Quarter aim point cache
+    private int cachedAimFrame = -1;
+    private bool cachedHasAimPoint = false;
+    private Vector3 cachedAimPoint = Vector3.zero;
 
     private void OnEnable()
     {
@@ -99,7 +111,6 @@ public class PlayerCombatController : MonoBehaviour
         
         ApplyAnimatorBools();
         ApplyAimDirectionParams();
-        
         PushWeaponContext();
     }
     
@@ -131,6 +142,7 @@ public class PlayerCombatController : MonoBehaviour
         }
 
         TickAim();
+        TickQuarterViewAimFacing();
 
         if (GetReloadDown())
             TryReload();
@@ -182,6 +194,66 @@ public class PlayerCombatController : MonoBehaviour
             SetAiming(wantAim);
     }
 
+    private void TickQuarterViewAimFacing()
+    {
+        if (cameraController == null)
+            return;
+        
+        if (cameraController.Mode != CameraController.CameraMode.QuarterView)
+            return;
+        
+        if (IsWeaponEquipped == false)
+            return;
+        
+        if (rotateOnlyWhenAiming && IsAiming == false)
+            return;
+        
+        if (IsBusyByRoll)
+            return;
+
+        if (TryGetQuarterAimPoint(out Vector3 aimPoint) == false)
+            return;
+
+        Vector3 dir = aimPoint - transform.position;
+        dir.y = 0f;
+
+        if (dir.sqrMagnitude < 0.0001f)
+            return;
+
+        Quaternion targetRot = Quaternion.LookRotation(dir.normalized, Vector3.up);
+
+        // 부드러운 회전(프레임레이트 독립)
+        float t = 1f - Mathf.Exp(-quarterAimTurnSpeed * Time.deltaTime);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
+    }
+
+    private bool TryGetQuarterAimPoint(out Vector3 aimPoint)
+    {
+        if (cachedAimFrame == Time.frameCount)
+        {
+            aimPoint = cachedAimPoint;
+            return cachedHasAimPoint;
+        }
+
+        cachedAimFrame = Time.frameCount;
+        cachedHasAimPoint = false;
+        cachedAimPoint = Vector3.zero;
+
+        if (aimProvider != null)
+        {
+            if (aimProvider.TryGetAimPoint(quarterAimMaxDistance, quarterAimMask, out Vector3 hit))
+            {
+                cachedHasAimPoint = true;
+                cachedAimPoint = hit;
+                aimPoint = cachedAimPoint;
+                return true;
+            }
+        }
+
+        aimPoint = default;
+        return false;
+    }
+
     private void SetAiming(bool aiming)
     {
         IsAiming = aiming;
@@ -191,8 +263,6 @@ public class PlayerCombatController : MonoBehaviour
         RefreshCrosshairVisibility();
         
         RefreshRigWeights();
-
-        cameraController.SetAiming(IsAiming);
         
         ApplyAimDirectionParams();
         
@@ -204,7 +274,7 @@ public class PlayerCombatController : MonoBehaviour
         if (currentWeapon == null)
             return;
         
-        currentWeapon.UpdateContext(new WeaponContext(aimProvider
+        currentWeapon.SetContext(new WeaponContext(aimProvider
                                                     , transform
                                                     , IsAiming));
         
@@ -216,13 +286,56 @@ public class PlayerCombatController : MonoBehaviour
         if (animator == null)
             return;
 
-        if (lookController == null)
-            return;
+        // 1인칭
+        if (cameraController != null && cameraController.Mode == CameraController.CameraMode.FirstPerson)
+        {
+            if (lookController == null)
+                return;
 
-        Vector2 look = lookController.LookLocalDir;
+            Vector2 look = lookController.LookLocalDir;
+            animator.SetFloat(AIM_X, look.x);
+            animator.SetFloat(AIM_Y, look.y);
+            return;
+        }
+
+        // 쿼터뷰: 조준점 기준으로 AimX/AimY 세팅
+        if (cameraController != null && cameraController.Mode == CameraController.CameraMode.QuarterView)
+        {
+            if (IsWeaponEquipped == false)
+            {
+                animator.SetFloat(AIM_X, 0f);
+                animator.SetFloat(AIM_Y, 0f);
+                return;
+            }
+
+            if (TryGetQuarterAimPoint(out Vector3 aimPoint) == false)
+            {
+                animator.SetFloat(AIM_X, 0f);
+                animator.SetFloat(AIM_Y, 0f);
+                return;
+            }
+            
+            Vector3 dir = aimPoint - transform.position;
+            dir.y = 0f;
+
+            if (dir.sqrMagnitude < 0.0001f)
+            {
+                animator.SetFloat(AIM_X, 0f);
+                animator.SetFloat(AIM_Y, 0f);
+                return;
+            }
+
+            dir.Normalize();
+            
+            Vector3 local = transform.InverseTransformDirection(dir);
+            
+            animator.SetFloat(AIM_X, local.x);
+            animator.SetFloat(AIM_Y, local.z);
+            return;
+        }
         
-        animator.SetFloat(AIM_X, look.x);
-        animator.SetFloat(AIM_Y, look.y);
+        animator.SetFloat(AIM_X, 0f);
+        animator.SetFloat(AIM_Y, 0f);
     }
 
     private void TickFire()
@@ -312,10 +425,10 @@ public class PlayerCombatController : MonoBehaviour
 
     private bool GetFireHeld()
     {
-        if (input.Shoot)
+        if (input.Fire)
             return true;
 
-        return input.Shoot;
+        return input.Fire;
     }
 
     private bool GetAimHeld()
@@ -358,23 +471,37 @@ public class PlayerCombatController : MonoBehaviour
         }
     }
 
-    private void RefreshCrosshairVisibility()
+    void RefreshCrosshairVisibility()
     {
         if (crosshairUI == null)
             return;
 
         bool visible = false;
+        bool followMouse = false;
 
         if (cameraController != null)
         {
-            visible = (cameraController.Mode == CameraController.CameraMode.FirstPerson) 
-                      && IsWeaponEquipped;
+            // 1인칭: 무기 장착 시 CrosshairUI 표시 (중앙 고정)
+            // 쿼터뷰: 무기 장착 시 CrosshairUI 표시 (마우스 추적)
+            if (IsWeaponEquipped)
+            {
+                if (cameraController.Mode == CameraController.CameraMode.FirstPerson)
+                {
+                    visible = true;
+                    followMouse = false;
+                }
+                else if (cameraController.Mode == CameraController.CameraMode.QuarterView)
+                {
+                    visible = true;
+                    followMouse = true;
+                }
+            }
+            cameraController.SetQuarterViewCursorHidden(IsWeaponEquipped);
         }
-        
+
         crosshairUI.gameObject.SetActive(visible);
         
-        if (visible == false && IsAiming)
-            SetAiming(false);
+        crosshairUI.SetFollowMouse(followMouse);
     }
 
     private void RefreshRigWeights()

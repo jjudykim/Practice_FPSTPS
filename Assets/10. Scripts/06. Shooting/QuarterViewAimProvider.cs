@@ -1,10 +1,11 @@
 using UnityEngine;
 
-public class FirstPersonAimProvider : MonoBehaviour, IAimProvider
+public class QuarterViewAimProvider : MonoBehaviour, IAimProvider
 {
-    [Header("Ref")] 
+    [Header("Ref")]
     [SerializeField] private Camera aimCamera;
-    [SerializeField] public Transform muzzle;
+
+    [SerializeField] private Transform muzzle;
     
     public Camera AimCamera => aimCamera;
     public Transform Muzzle => muzzle;
@@ -17,12 +18,11 @@ public class FirstPersonAimProvider : MonoBehaviour, IAimProvider
 
     public Ray GetAimRay()
     {
-        // 카메라가 없을 경우를 대비 : 정면으로 레이
         if (aimCamera == null)
             return new Ray(transform.position, transform.forward);
 
-        Vector3 screenCenter = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, 0f);
-        return aimCamera.ScreenPointToRay(screenCenter);
+        Vector3 mouse = Input.mousePosition;
+        return aimCamera.ScreenPointToRay(mouse);
     }
 
     public bool TryGetAimPoint(float maxDistance, LayerMask mask, out Vector3 hitPoint)
@@ -38,4 +38,5 @@ public class FirstPersonAimProvider : MonoBehaviour, IAimProvider
         hitPoint = ray.origin + ray.direction * maxDistance;
         return false;
     }
+
 }

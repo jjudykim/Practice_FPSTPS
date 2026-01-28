@@ -5,7 +5,7 @@ public class WeaponBase : MonoBehaviour, IWeapon
     {
         [Header("RuntimeData (Injected)")] 
         [SerializeField] private WeaponData data;
-        private WeaponContext context;
+        [SerializeField] private WeaponContext context;
 
         [Header("Model")]
         [SerializeField] private GameObject model;
@@ -67,7 +67,7 @@ public class WeaponBase : MonoBehaviour, IWeapon
             }
         }
 
-        public void UpdateContext(WeaponContext weaponContext)
+        public void SetContext(WeaponContext weaponContext)
         {
             context = weaponContext;
         }

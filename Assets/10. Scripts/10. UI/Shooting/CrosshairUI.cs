@@ -19,15 +19,21 @@ public class CrosshairUI : MonoBehaviour
     [SerializeField] private float radiusLerpSpeed = 15f;
 
     [Header("Spread -> Radius Mapping")]
-    [SerializeField] private float spreadToPixels = 40f;   
-
+    [SerializeField] private float spreadToPixels = 40f;
+    
+    [Header("Follow Mode (QuarterView)")]
+    [SerializeField] private bool followMouse = false;
+    [SerializeField] private Canvas parentCanvas;
+    
     [Header("Recoil Kick (Draft)")]
     [SerializeField] private float kickAddPx = 10f;
     [SerializeField] private float kickDecaySpeed = 18f;
+
+    private RectTransform selfRect;
+    private RectTransform parentRect;
     
     private float targetRadius;
     private float currentRadius;
-
     private float recoilKick;
     
     private WeaponData weaponData;
@@ -40,6 +46,9 @@ public class CrosshairUI : MonoBehaviour
 
     private void Awake()
     {
+        selfRect = transform as RectTransform;
+        parentRect = (transform.parent as RectTransform);
+        
         ApplyBarSize();
         currentRadius = minRadiusPx;
         targetRadius = minRadiusPx;
@@ -47,26 +56,57 @@ public class CrosshairUI : MonoBehaviour
 
     private void Update()
     {
+        // 0) 루트 위치 갱신 (쿼터뷰 : 마우스, 1인칭 : 화면 중앙 고정)
+        UpdateRootPosition();
+        
         // 1) recoilKick 자연 감소
-        recoilKick = Mathf.MoveTowards(recoilKick, 0f, kickDecaySpeed);
+        recoilKick = Mathf.MoveTowards(recoilKick, 0f, kickDecaySpeed * Time.deltaTime);
 
         // 2) 목표 반경 계산
         float spreadAngle = GetCurrentSpreadAngleDeg();
         float spreadPx = spreadAngle * spreadToPixels;
 
         float raw = spreadPx + recoilKick;
-        
         targetRadius = Mathf.Clamp(raw, minRadiusPx, maxRadiusPx);
 
+        // 3) 반경 보간
         currentRadius = Mathf.Lerp(currentRadius, targetRadius, 1f - Mathf.Exp(-radiusLerpSpeed * Time.deltaTime));
-
         ApplyRadius(currentRadius);
+    }
+
+    public void SetFollowMouse(bool enabled)
+    {
+        followMouse = enabled;
+        UpdateRootPosition(true);
     }
 
     public void SetContext(WeaponData data, bool ads)
     {
         weaponData = data;
         isADS = ads;
+    }
+
+    private void UpdateRootPosition(bool force = false)
+    {
+        if (selfRect == null || parentRect == null)
+            return;
+
+        if (followMouse)
+        {
+            Vector2 screenPos = Input.mousePosition;
+
+            Camera uiCam = null;  
+            
+            if (parentCanvas != null && parentCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                uiCam = parentCanvas.worldCamera;
+
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, screenPos, uiCam, out Vector2 localPoint))
+                selfRect.anchoredPosition = localPoint;
+        }
+        else
+        {
+            selfRect.anchoredPosition = Vector2.zero;
+        }
     }
 
     public void OnFired()
