@@ -4,6 +4,7 @@ using UnityEngine.Serialization;
 public enum WeaponCaliber
 {
     None = 0,
+    Pistol_45ACP,
     Pistol_9mm,
     Rifle_556,
     Rifle_762,
@@ -75,8 +76,6 @@ public class WeaponData
             VerticalRecoil = 0f;
         if (HorizontalRecoil < 0f)
             HorizontalRecoil = 0f;
-        
-        isAutomatic = true;
     }
 
 #if UNITY_EDITOR

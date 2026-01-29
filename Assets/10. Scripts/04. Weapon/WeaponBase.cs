@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -24,11 +25,14 @@ public class WeaponBase : MonoBehaviour, IWeapon
         private float nextFireTime;
         
         private Coroutine reloadCoroutine;
+        
+        // Fire 성공 시 호출 이벤트
+        public event Action OnShotFired;
 
         public GameObject Model => model;
         public WeaponData Data => data;
         
-        public bool IsRealoading => isReloading;
+        public bool IsReloading => isReloading;
         public int CurrentAmmo => currentAmmo;
 
         private void Awake()
@@ -74,12 +78,6 @@ public class WeaponBase : MonoBehaviour, IWeapon
 
         public void TriggerDown()
         {
-            if (data.isAutomatic == false)
-            {
-                TryFire();
-                return;
-            }
-
             TryFire();
         }
         
@@ -183,6 +181,9 @@ public class WeaponBase : MonoBehaviour, IWeapon
             bool isADS = context.IsADS;
             
             Debug.Log("[WeaponBase] calling HitscanShooter.Fire()");
+
+            OnShotFired?.Invoke();
+            
             hitscanShooter.Fire(context.AimProvider, muzzle, data, isADS);
             currentAmmo--;
             

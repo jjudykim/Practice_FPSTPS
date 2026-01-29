@@ -1,88 +1,94 @@
 using UnityEngine;
-using UnityEngine.InputSystem.XR.Haptics;
 
+/// <summary>
+/// Crosshair UI (Two-State Lerp)
+/// - Aim(ADS) OFF: hipRadiusPx 로 벌어진 상태
+/// - Aim(ADS) ON : adsRadiusPx 로 모인 상태
+/// - Aim 상태가 바뀔 때에만 목표 반경이 바뀌며, 그 사이 보간만 일어남
+/// </summary>
 public class CrosshairUI : MonoBehaviour
 {
-    [Header("Parts")]
+    [Header("Parts (RectTransforms)")]
     [SerializeField] private RectTransform up;
     [SerializeField] private RectTransform down;
     [SerializeField] private RectTransform left;
     [SerializeField] private RectTransform right;
 
-    [Header("Visual")]
-    [SerializeField] private float barLength = 12f;   
-    [SerializeField] private float barThickness = 2f;
-
-    [Header("Radius")]
-    [SerializeField] private float minRadiusPx = 6f;   
-    [SerializeField] private float maxRadiusPx = 60f;
-    [SerializeField] private float radiusLerpSpeed = 15f;
-
-    [Header("Spread -> Radius Mapping")]
-    [SerializeField] private float spreadToPixels = 40f;
-    
     [Header("Follow Mode (QuarterView)")]
     [SerializeField] private bool followMouse = false;
     [SerializeField] private Canvas parentCanvas;
-    
-    [Header("Recoil Kick (Draft)")]
-    [SerializeField] private float kickAddPx = 10f;
-    [SerializeField] private float kickDecaySpeed = 18f;
 
+    [Header("Two-State Radius (Pixels)")]
+    [SerializeField] private float hipRadiusPx = 28f;
+    [SerializeField] private float adsRadiusPx = 10f;
+
+    [Header("Lerp")]
+    [SerializeField] private float radiusLerpSpeed = 18f;
+
+    [Header("Clamp (Safety)")]
+    [SerializeField] private float minRadiusPx = 2f;
+    [SerializeField] private float maxRadiusPx = 80f;
+
+    // 내부 상태
     private RectTransform selfRect;
     private RectTransform parentRect;
-    
-    private float targetRadius;
-    private float currentRadius;
-    private float recoilKick;
-    
-    private WeaponData weaponData;
+
+    private WeaponData weaponData; // 필요하면 유지(현재는 반경 계산에 사용하지 않음)
     private bool isADS;
 
-    private void Reset()
-    {
-        ApplyBarSize();
-    }
+    private float currentRadius;
+    private float targetRadius;
 
     private void Awake()
     {
         selfRect = transform as RectTransform;
-        parentRect = (transform.parent as RectTransform);
-        
-        ApplyBarSize();
-        currentRadius = minRadiusPx;
-        targetRadius = minRadiusPx;
+        parentRect = transform.parent as RectTransform;
+
+        // 초기 상태: hip 기준으로 시작
+        targetRadius = Mathf.Clamp(hipRadiusPx, minRadiusPx, maxRadiusPx);
+        currentRadius = targetRadius;
+
+        ApplyRadius(currentRadius);
+        UpdateRootPosition(force: true);
     }
 
     private void Update()
     {
-        // 0) 루트 위치 갱신 (쿼터뷰 : 마우스, 1인칭 : 화면 중앙 고정)
+        // 1) 루트 위치 갱신 (쿼터뷰: 마우스 추적 / 1인칭: 중앙 고정)
         UpdateRootPosition();
-        
-        // 1) recoilKick 자연 감소
-        recoilKick = Mathf.MoveTowards(recoilKick, 0f, kickDecaySpeed * Time.deltaTime);
 
-        // 2) 목표 반경 계산
-        float spreadAngle = GetCurrentSpreadAngleDeg();
-        float spreadPx = spreadAngle * spreadToPixels;
+        // 2) 목표 반경은 "두 상태" 중 하나만 선택
+        float desired = isADS ? adsRadiusPx : hipRadiusPx;
+        targetRadius = Mathf.Clamp(desired, minRadiusPx, maxRadiusPx);
 
-        float raw = spreadPx + recoilKick;
-        targetRadius = Mathf.Clamp(raw, minRadiusPx, maxRadiusPx);
+        // 3) 목표로 보간 (Aim 전환 시에만 target이 바뀌므로, 그때만 움직임)
+        float t = 1f - Mathf.Exp(-radiusLerpSpeed * Time.deltaTime);
+        currentRadius = Mathf.Lerp(currentRadius, targetRadius, t);
 
-        // 3) 반경 보간
-        currentRadius = Mathf.Lerp(currentRadius, targetRadius, 1f - Mathf.Exp(-radiusLerpSpeed * Time.deltaTime));
         ApplyRadius(currentRadius);
     }
 
+    /// <summary>
+    /// QuarterView(마우스 추적) / FirstPerson(중앙 고정) 전환용
+    /// PlayerCombatController의 RefreshCrosshairVisibility에서 호출하던 흐름 유지.
+    /// </summary>
     public void SetFollowMouse(bool enabled)
     {
         followMouse = enabled;
-        UpdateRootPosition(true);
+        UpdateRootPosition(force: true);
     }
 
+    /// <summary>
+    /// 무기 데이터/ADS 상태를 외부에서 주입받습니다.
+    /// - weaponData는 현재 반경 계산에 사용하지 않지만,
+    ///   향후 색상/가시성/기타 표현에 쓸 수 있어 유지합니다.
+    /// </summary>
     public void SetContext(WeaponData data, bool ads)
     {
         weaponData = data;
+
+        // ADS 상태가 바뀌었을 때만 반경 목표가 바뀌므로
+        // 이 함수가 호출될 때 isADS가 변경되면 "보간 전환"이 발생합니다.
         isADS = ads;
     }
 
@@ -95,8 +101,7 @@ public class CrosshairUI : MonoBehaviour
         {
             Vector2 screenPos = Input.mousePosition;
 
-            Camera uiCam = null;  
-            
+            Camera uiCam = null;
             if (parentCanvas != null && parentCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
                 uiCam = parentCanvas.worldCamera;
 
@@ -105,48 +110,34 @@ public class CrosshairUI : MonoBehaviour
         }
         else
         {
+            // 중앙 고정
             selfRect.anchoredPosition = Vector2.zero;
         }
     }
 
-    public void OnFired()
-    {
-        recoilKick += kickAddPx;
-    }
-
-    private float GetCurrentSpreadAngleDeg()
-    {
-        if (weaponData == null)
-            return 0.2f;
-
-        float adsSpread = weaponData.ADS_Spread;
-        if (isADS)
-            return adsSpread;
-
-        return Mathf.Max(adsSpread * 3f, adsSpread);
-    }
-
     private void ApplyRadius(float r)
     {
-        if (up != null)
-            up.anchoredPosition = new Vector2(0f, +r);
-        if (down != null)
-            down.anchoredPosition = new Vector2(0f, -r);
-        if (left != null)
-            left.anchoredPosition = new Vector2(-r, 0f);
-        if (right != null)
-            right.anchoredPosition = new Vector2(+r, 0f);
+        if (up != null) up.anchoredPosition = new Vector2(0f, +r);
+        if (down != null) down.anchoredPosition = new Vector2(0f, -r);
+        if (left != null) left.anchoredPosition = new Vector2(-r, 0f);
+        if (right != null) right.anchoredPosition = new Vector2(+r, 0f);
     }
 
-    private void ApplyBarSize()
+#if UNITY_EDITOR
+    // 에디터에서 값 조정할 때 즉시 반영되도록
+    private void OnValidate()
     {
-        if (up != null)
-            up.sizeDelta = new Vector2(barThickness, barLength);
-        if (down != null)
-            down.sizeDelta = new Vector2(barThickness, barLength);
-        if (left != null)
-            left.sizeDelta = new Vector2(barLength, barThickness);
-        if (right != null)
-            right.sizeDelta = new Vector2(barLength, barThickness);
+        float hip = Mathf.Clamp(hipRadiusPx, minRadiusPx, maxRadiusPx);
+        float ads = Mathf.Clamp(adsRadiusPx, minRadiusPx, maxRadiusPx);
+
+        hipRadiusPx = hip;
+        adsRadiusPx = ads;
+
+        if (Application.isPlaying == false)
+        {
+            // 플레이 중이 아니면 그냥 hip 기준으로 미리보기
+            ApplyRadius(hipRadiusPx);
+        }
     }
+#endif
 }
