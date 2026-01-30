@@ -78,9 +78,6 @@ public class PlayerMoveController : MonoBehaviour
         }
 
         TickMove();
-
-        if (input.Reload)
-            Debug.Log("[Player] Reload Trigger!");
     }
 
     private void TickMove()
