@@ -185,7 +185,7 @@ public class EnemyController : MonoBehaviour
             return;
 
         curHp -= damage;
-        Debug.Log($"[Enemy] Hit! damage={damage}, hp={hp}/{maxHp}");
+        Debug.Log($"[Enemy] Hit! damage={damage}, hp={curHp}/{maxHp}");
 
         if (curHp <= 0)
         {

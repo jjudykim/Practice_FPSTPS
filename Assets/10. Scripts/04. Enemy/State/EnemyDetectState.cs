@@ -1,18 +1,31 @@
 public class EnemyDetectState : IEnemyState
 {
-    public bool IsForced { get; }
+    private readonly EnemyController owner;
+    public bool IsForced => false;
+
+    public EnemyDetectState(EnemyController owner)
+    {
+        this.owner = owner;
+    }
+
     public void Enter()
     {
-        throw new System.NotImplementedException();
+        owner.SetLock(false);
+        owner.ResumeMove();
     }
 
     public void Tick(float dt)
     {
-        throw new System.NotImplementedException();
+        if (owner.HasTarget() == false || owner.IsTargetInDetectRange() == false)
+        {
+            owner.ToIdle();
+            return;
+        }
+
+        owner.ToChase();
     }
 
     public void Exit()
     {
-        throw new System.NotImplementedException();
     }
 }

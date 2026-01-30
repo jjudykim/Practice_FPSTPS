@@ -1,18 +1,40 @@
 public class EnemyAttackState : IEnemyState
 {
-    public bool IsForced { get; }
+    private readonly EnemyController owner;
+    public bool IsForced => false;
+
+    public EnemyAttackState(EnemyController owner)
+    {
+        this.owner = owner;
+    }
+
     public void Enter()
     {
-        throw new System.NotImplementedException();
+        owner.SetLock(false);
+        owner.StopMove();
     }
 
     public void Tick(float dt)
     {
-        throw new System.NotImplementedException();
+        if (owner.HasTarget() == false)
+        {
+            owner.ToIdle();
+            return;
+        }
+
+        if (owner.IsTargetInAttackRange() == false)
+        {
+            owner.ToChase();
+            return;
+        }
+
+        if (owner.CanAttack())
+        {
+            owner.DoAttack();
+        }
     }
 
     public void Exit()
     {
-        throw new System.NotImplementedException();
     }
 }

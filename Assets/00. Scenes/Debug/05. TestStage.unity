@@ -692,6 +692,7 @@ GameObject:
   - component: {fileID: 983477344}
   - component: {fileID: 983477343}
   - component: {fileID: 983477342}
+  - component: {fileID: 983477347}
   m_Layer: 7
   m_Name: Enemy
   m_TagString: Untagged
@@ -817,6 +818,26 @@ Transform:
   - {fileID: 1726107917}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &983477347
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 983477341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9546725a450f5e34fa49af1a377366ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyController
+  target: {fileID: 1138943239}
+  agent: {fileID: 983477342}
+  maxHp: 30
+  curHp: 30
+  patrolRadius: 3
+  detectRange: 10
+  attackRange: 2.2
+  attackCooldown: 1
 --- !u!1 &1012360943 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1873907426777758, guid: e461a86137d991d4e9a1a3b637ebe9e8, type: 3}

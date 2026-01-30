@@ -1,18 +1,55 @@
+using UnityEngine;
+
 public class EnemyChaseState : IEnemyState
 {
-    public bool IsForced { get; }
+    private readonly EnemyController owner;
+    private float repathTimer;
+    public bool IsForced => false;
+
+    public EnemyChaseState(EnemyController owner)
+    {
+        this.owner = owner;
+    }
+
     public void Enter()
     {
-        throw new System.NotImplementedException();
+        owner.SetLock(false);
+        owner.ResumeMove();
+
+        repathTimer = 0f;
     }
 
     public void Tick(float dt)
     {
-        throw new System.NotImplementedException();
+        if (owner.HasTarget() == false)
+        {
+            owner.ToIdle();
+            return;
+        }
+
+        if (owner.IsTargetInDetectRange() == false)
+        {
+            owner.ToIdle();
+            return;
+        }
+
+        if (owner.IsTargetInAttackRange())
+        {
+            owner.ToAttack();
+            return;
+        }
+
+        repathTimer -= dt;
+        if (repathTimer <= 0f)
+        {
+            repathTimer = 0.1f;
+
+            Transform target = owner.GetTargetTransform();
+            owner.MoveTo(target.position);
+        }
     }
 
     public void Exit()
     {
-        throw new System.NotImplementedException();
     }
 }

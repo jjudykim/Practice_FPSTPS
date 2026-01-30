@@ -7,7 +7,7 @@ public class EnemyStateMachine
 
     public void Tick(float dt)
     {
-        CurrentState.Tick(dt);
+        CurrentState?.Tick(dt);
     }
 
     public void ChangeState(IEnemyState next)
@@ -18,7 +18,7 @@ public class EnemyStateMachine
         if (IsLocked && next.IsForced == false)
             return;
 
-        CurrentState.Exit();
+        CurrentState?.Exit();
         CurrentState = next;
         CurrentState.Enter();
     }

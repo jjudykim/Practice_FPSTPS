@@ -1,18 +1,45 @@
+using UnityEngine;
+
 public class EnemyHitState : IEnemyState
 {
-    public bool IsForced { get; }
+    private readonly EnemyController owner;
+    private float stunTimer;
+
+    public bool IsForced => true;
+
+    public EnemyHitState(EnemyController owner)
+    {
+        this.owner = owner;
+    }
+
     public void Enter()
     {
-        throw new System.NotImplementedException();
+        owner.SetLock(true);
+        owner.StopMove();
+
+        stunTimer = 0.2f;
+        Debug.Log("[Enemy] ::: Enter Hit");
     }
 
     public void Tick(float dt)
     {
-        throw new System.NotImplementedException();
+        if (owner.IsDead)
+        {
+            owner.ToDead();
+            return;
+        }
+
+        stunTimer -= dt;
+        if (stunTimer <= 0f)
+        {
+            owner.SetLock(false);
+            owner.ToDetect();
+        }
     }
+
 
     public void Exit()
     {
-        throw new System.NotImplementedException();
+        Debug.Log("[Enemy] ::: Exit Hit");
     }
 }
