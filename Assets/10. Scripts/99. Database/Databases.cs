@@ -6,6 +6,7 @@ using UnityEngine;
 public class Databases : SingletonBase<Databases>
 {
     public WeaponDatabase Weapon { get; private set; }
+    public BulletDatabase Bullet { get; private set; }
     
     // 전체 DB 로딩 완료 여부
     public bool IsLoaded { get; private set; }
@@ -17,7 +18,8 @@ public class Databases : SingletonBase<Databases>
         base.OnInitialize();
 
         Weapon = new WeaponDatabase();
-
+        Bullet = new BulletDatabase();
+        
         IsLoaded = false;
     }
     
@@ -41,6 +43,9 @@ public class Databases : SingletonBase<Databases>
         {
             if (Weapon != null)
                 await Weapon.EnsureLoadedAsync();
+            
+            if (Bullet != null)
+                await Bullet.EnsureLoadedAsync();
             
             IsLoaded = true;
             Debug.Log("[Databases] PreloadAllAsync completed.");

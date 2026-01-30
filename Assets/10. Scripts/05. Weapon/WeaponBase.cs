@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Reflection;
 using UnityEngine;
 
 public class WeaponBase : MonoBehaviour, IWeapon
@@ -7,6 +8,9 @@ public class WeaponBase : MonoBehaviour, IWeapon
         [Header("RuntimeData (Injected)")] 
         [SerializeField] private WeaponData data;
         [SerializeField] private WeaponContext context;
+
+        [Header("Ammo")] 
+        [SerializeField] private BulletData bullet;
 
         [Header("Model")]
         [SerializeField] private GameObject model;
@@ -45,7 +49,14 @@ public class WeaponBase : MonoBehaviour, IWeapon
                 data.ValidateAndClamp();
                 currentAmmo = data.MagazineSize;
             }
+
+            if (bullet != null && string.IsNullOrEmpty(bullet.Id))
+                bullet = null;
             
+            if (bullet != null)
+                bullet.ValidateAndClamp();
+
+            EnsureBulletCompatibilityOrNull();
             ResolveHardpoints();
         }
 
@@ -69,6 +80,21 @@ public class WeaponBase : MonoBehaviour, IWeapon
                 StopCoroutine(reloadCoroutine);
                 reloadCoroutine = null;
             }
+
+            EnsureBulletCompatibilityOrNull();
+        }
+
+        public void SetBullet(BulletData bulletData)
+        {
+            if (bulletData == null || string.IsNullOrEmpty(bulletData.Id))
+            {
+                bullet = null;
+                return;
+            }
+
+            bullet = bulletData;
+            bullet.ValidateAndClamp();
+            EnsureBulletCompatibilityOrNull();
         }
 
         public void SetContext(WeaponContext weaponContext)
@@ -148,6 +174,21 @@ public class WeaponBase : MonoBehaviour, IWeapon
             if (data == null)
                 return;
 
+            // Bullet / Caliber 체크 =======================
+            if (bullet == null)
+            {
+                Debug.LogWarning("[WeaponBase] ::: Bullet is Null");
+                return;
+            }
+            
+            if (data.Caliber.IsCompatibleWith(bullet.Caliber) == false)
+            {
+                Debug.LogWarning("[WeaponBase] ::: Incompatible caliber");
+                return;
+            }
+            
+            
+            // Aim / Shoot 관련 체크 =======================
             if (context.AimProvider == null)
             {
                 Debug.LogWarning("[WeaponBase] ::: AimProvider is Null");
@@ -160,8 +201,9 @@ public class WeaponBase : MonoBehaviour, IWeapon
                 return;
             }
 
+            // Reload 중 발사 시 Reload 취소
             if (isReloading)
-                return;
+                CancelReload();
 
             if (Time.time < nextFireTime)
             {
@@ -172,7 +214,6 @@ public class WeaponBase : MonoBehaviour, IWeapon
             if (currentAmmo <= 0)
             {
                 Debug.Log("[WeaponBase] ammo empty -> Reload()");
-                Reload();
                 return;
             }
             
@@ -183,8 +224,10 @@ public class WeaponBase : MonoBehaviour, IWeapon
             Debug.Log("[WeaponBase] calling HitscanShooter.Fire()");
 
             OnShotFired?.Invoke();
-            
-            hitscanShooter.Fire(context.AimProvider, muzzle, data, isADS);
+
+            float finalDamage = data.BaseDamage * Mathf.Max(0f, bullet.DamageMultiplier);
+            hitscanShooter.Fire(context.AimProvider, muzzle, data, isADS, finalDamage);
+
             currentAmmo--;
             
             // 소음 이벤트
@@ -210,7 +253,22 @@ public class WeaponBase : MonoBehaviour, IWeapon
             // 반동 값 발생까지만 책임지고, 반동 적용은 조준 컨트롤러에게 위임
             // TODO : IRecoilReceiver를 제작해서 호출
         }
+        
+        // ===============================
+        //      Bullet Compatibility
+        // ===============================
+        private void EnsureBulletCompatibilityOrNull()
+        {
+            if (data == null || bullet == null)
+                return;
 
+            if (data.Caliber.IsCompatibleWith(bullet.Caliber) == false)
+            {
+                Debug.LogWarning($"[WeaponBase] ::: Incompatible caliber");
+                bullet = null;
+            }
+        }
+        
         private void ResolveHardpoints()
         {
             if (muzzle == null)

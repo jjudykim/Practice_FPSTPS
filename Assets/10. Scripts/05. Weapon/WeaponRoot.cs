@@ -18,6 +18,7 @@ public class WeaponRoot : MonoBehaviour
     {
         if (equipDefaultOnStart && defaultWeaponPrefab != null)
         {
+            Debug.Log($"[WeaponRoot] DB Loaded? Weapon={Databases.Instance.Weapon.IsLoaded}, Bullet={Databases.Instance.Bullet.IsLoaded}");
             Equip(defaultWeaponPrefab);
         }
     }
@@ -32,11 +33,11 @@ public class WeaponRoot : MonoBehaviour
 
         Unequip();
 
-        // 무기 인스턴스 생성
+        // 1) 무기 인스턴스 생성
         WeaponBase instance = Instantiate(weaponPrefab, transform);
         CurrentWeapon = instance;
 
-        // 1) WeaponId 확인
+        // 2) WeaponId 확인
         WeaponIdBinding binding = CurrentWeapon.GetComponent<WeaponIdBinding>();
         if (binding == null || string.IsNullOrEmpty(binding.WeaponId))
         {
@@ -44,20 +45,20 @@ public class WeaponRoot : MonoBehaviour
             Unequip();
             return null;
         }
-
-        if (Databases.Instance.IsLoaded == false)
-        {
-            Debug.LogWarning("[WeaponRoot] Databases is not loaded yet.");
-        }
         
-        if (Databases.Instance.Weapon == null)
+        // 3) DB 참조 가져오기
+        WeaponDatabase weaponDb = Databases.Instance != null ? Databases.Instance.Weapon : null;
+        BulletDatabase bulletDb = Databases.Instance != null ? Databases.Instance.Bullet : null;
+        
+        if (weaponDb == null)
         {
-            Debug.LogError("[WeaponRoot] ::: WeaponDatabase is null.");
+            Debug.LogError("[WeaponRoot] WeaponDatabase is null.");
             Unequip();
             return null;
         }
         
-        if (Databases.Instance.Weapon.TryGet(binding.WeaponId, out WeaponData weaponData) == false 
+        // 4) WeaponData 로드
+        if (weaponDb.TryGet(binding.WeaponId, out WeaponData weaponData) == false 
             || weaponData == null)
         {
             Debug.LogError($"[WeaponRoot] WeaponData not found. WeaponId='{binding.WeaponId}'.");
@@ -65,9 +66,33 @@ public class WeaponRoot : MonoBehaviour
             return null;
         }
 
-        WeaponContext tempContext = new WeaponContext(null, transform, false);
-        CurrentWeapon.Init(weaponData, tempContext);
-        
+        WeaponContext context = new WeaponContext(null, transform, false);
+        CurrentWeapon.Init(weaponData, context);
+
+        if (string.IsNullOrEmpty(binding.BulletId) == false)
+        {
+            if (bulletDb == null)
+            {
+                Debug.LogError("[WeaponRoot] ::: BulletDatabase is null.");
+            }
+            else if (bulletDb.TryGet(binding.BulletId, out BulletData bulletData) == false
+                     || bulletData == null)
+            {
+                Debug.LogError($"[WeaponRoot] ::: BulletData not found. BulletId='{binding.BulletId}'.");
+            }
+            else
+            {
+                CurrentWeapon.SetBullet(bulletData);
+            }
+        }
+        else
+        {
+            if (bulletDb.TryGetDefault(weaponData.Caliber, out BulletData defaultBullet))
+                instance.SetBullet(defaultBullet);
+            else
+                Debug.LogWarning($"[WeaponRoot] No default bullet for caliber");
+        }
+
         return CurrentWeapon;
     }
 

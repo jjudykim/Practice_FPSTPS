@@ -3,121 +3,14 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
-public class WeaponDatabase
+public class WeaponDatabase : TSVDatabase<WeaponData, WeaponTsvRow>
 {
-    private readonly string tableName;
-    private readonly bool preferPesristent;
-    private readonly bool logOnLoad;
+    public WeaponDatabase(string tableName = "Weapon", bool logOnLoad = true) 
+        : base(tableName, logOnLoad, StringComparer.OrdinalIgnoreCase)
+    {
+    }
     
-     private readonly Dictionary<string, WeaponData> byId = new(StringComparer.OrdinalIgnoreCase);
-
-    private bool isLoaded = false;
-    private Task loadTask;
-
-    public WeaponDatabase(string tableName = "Weapon", bool logOnLoad = true)
-    {
-        this.tableName = tableName;
-        this.logOnLoad = logOnLoad;
-
-        isLoaded = false;
-        loadTask = null;
-    }
-
-    /// <summary>
-    /// 로드가 필요하면 로드, 이미 로딩 중이면 그 Task를 반환
-    /// </summary>
-    public Task EnsureLoadedAsync()
-    {
-        if (isLoaded)
-            return Task.CompletedTask;
-
-        if (loadTask != null)
-            return loadTask;
-
-        loadTask = LoadInternalAsync();
-        return loadTask;
-    }
-
-    public bool TryGet(string weaponId, out WeaponData data)
-    {
-        if (string.IsNullOrEmpty(weaponId))
-        {
-            data = null;
-            return false;
-        }
-
-        return byId.TryGetValue(weaponId, out data);
-    }
-
-    public WeaponData GetOrNull(string weaponId)
-    {
-        if (TryGet(weaponId, out WeaponData data))
-            return data;
-        
-        return null;
-    }
-
-    private async Task LoadInternalAsync()
-    {
-        byId.Clear();
-        isLoaded = false;
-
-        List<WeaponTsvRow> rows = await TryReadRowsAsync(false);
-
-        int loaded = 0;
-
-        for (int i = 0; i < rows.Count; i++)
-        {
-            WeaponTsvRow row = rows[i];
-            if (row == null)
-                continue;
-
-            if (string.IsNullOrEmpty(row.Id))
-            {
-                Debug.LogWarning($"[WeaponDatabase] Row {i}: missing Id. skipped.");
-                continue;
-            }
-
-            WeaponData data = ConvertRowToWeaponData(row, i);
-            if (data == null)
-                continue;
-
-            data.ValidateAndClamp();
-
-            if (byId.ContainsKey(data.Id))
-            {
-                Debug.LogWarning($"[WeaponDatabase] Duplicated Id='{data.Id}'. Overwriting previous.");
-                byId[data.Id] = data;
-            }
-            else
-            {
-                byId.Add(data.Id, data);
-            }
-
-            loaded++;
-        }
-
-        isLoaded = true;
-
-        if (logOnLoad)
-            Debug.Log($"[WeaponDatabase] Loaded {loaded} weapons from table '{tableName}'.");
-    }
-
-    private async Task<List<WeaponTsvRow>> TryReadRowsAsync(bool isStreamingAssetPath)
-    {
-        try
-        {
-            List<WeaponTsvRow> rows = await TSVReader.ReadTableAsync<WeaponTsvRow>(tableName, isStreamingAssetPath);
-            return rows;
-        }
-        catch (Exception e)
-        {
-            Debug.LogWarning($"[WeaponDatabase] ReadTable failed from PersistentData. table='{tableName}'.\n{e}");
-            return null;
-        }
-    }
-
-    private WeaponData ConvertRowToWeaponData(WeaponTsvRow row, int rowIndex)
+    protected override WeaponData ConvertRowToData(WeaponTsvRow row, int rowIndex)
     {
         WeaponData d = new WeaponData();
 
@@ -150,21 +43,23 @@ public class WeaponDatabase
         return d;
     }
 
-    private WeaponCaliber ParseCaliberOrDefault(string raw, int rowIndex, string weaponId)
+    protected override void ValidateData(WeaponData data, WeaponTsvRow row, int rowIndex)
+    {
+        data.ValidateAndClamp();
+    }
+    
+    private Caliber ParseCaliberOrDefault(string raw, int rowIndex, string weaponId)
     {
         if (string.IsNullOrEmpty(raw))
         {
             Debug.LogWarning($"[WeaponDatabase] Row {rowIndex} (Id='{weaponId}'): Caliber empty. Using None.");
-            return WeaponCaliber.None;
+            return Caliber.None;
         }
-
-        // 예: "Rifle_556"
-        if (Enum.TryParse(raw.Trim(), ignoreCase: true, out WeaponCaliber parsed))
+        
+        if (Enum.TryParse(raw.Trim(), ignoreCase: true, out Caliber parsed))
             return parsed;
 
         Debug.LogWarning($"[WeaponDatabase] Row {rowIndex} (Id='{weaponId}'): Caliber '{raw}' invalid. Using None.");
-        return WeaponCaliber.None;
+        return Caliber.None;
     }
-        
-    
 }

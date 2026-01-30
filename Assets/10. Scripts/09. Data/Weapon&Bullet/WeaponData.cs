@@ -1,17 +1,6 @@
 using System;
 using UnityEngine.Serialization;
 
-public enum WeaponCaliber
-{
-    None = 0,
-    Pistol_45ACP,
-    Pistol_9mm,
-    Rifle_556,
-    Rifle_762,
-    SniperCal,
-    ShotGun_12G,
-}
-
 [Serializable]
 public class WeaponData
 {
@@ -19,7 +8,7 @@ public class WeaponData
     public string DisplayName;
     
     public float Weight;
-    public WeaponCaliber Caliber;
+    public Caliber Caliber;
     
     public float BaseDamage;
     public float FireRate; // RPS

@@ -1,7 +1,7 @@
 using System;
 
 [Serializable]
-public class WeaponTsvRow
+public class WeaponTsvRow : ITsvRowWithId
 {
     // ===========================
     // Key / Display

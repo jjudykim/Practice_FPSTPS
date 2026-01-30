@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using jjudy;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -45,6 +46,15 @@ public class PlayerCombatController : MonoBehaviour
 
     private IAimProvider aimProvider;
     private WeaponBase currentWeapon;
+
+    public ObservableValue<float> ReloadElapsedObs { get; } = new ObservableValue<float>(0f);
+    public ObservableValue<float> ReloadDurationObs { get; } = new ObservableValue<float>(1f);
+    public ObservableValue<bool> ReloadVisibleObs { get; } = new ObservableValue<bool>(false);
+
+    private bool wasReloading = false;
+    private bool reloadCompleted = false;
+    private float reloadCompleteTime = 0f;
+    private bool reloadCooldownActive = false;
 
     public bool IsWeaponEquipped { get; private set; }
     public bool IsAiming { get; private set; }
@@ -141,6 +151,7 @@ public class PlayerCombatController : MonoBehaviour
         // 0) 상태 갱신: Reload Lock (중앙 게이트)
         // ===========================
         IsReloading = (currentWeapon != null) && currentWeapon.IsReloading;
+        UpdateReloadProgress(Time.deltaTime);
 
         bool rolling = IsBusyByRoll;
 
@@ -228,6 +239,7 @@ public class PlayerCombatController : MonoBehaviour
 
             animator.SetTrigger(TRIGGER_EQUIP);
             BindWeaponEvents(currentWeapon);
+            ResetReloadUI();
         }
         else
         {
@@ -235,6 +247,7 @@ public class PlayerCombatController : MonoBehaviour
             currentWeapon = null;
             animator.SetTrigger(TRIGGER_UNEQUIP);
             UnbindWeaponEvents(currentWeapon);
+            ResetReloadUI();
 
             if (IsAiming)
                 SetAiming(false);
@@ -246,6 +259,72 @@ public class PlayerCombatController : MonoBehaviour
         RefreshRigWeights();
 
         Debug.Log($"[PlayerCombatCtrl] ::: Equip = {IsWeaponEquipped}");
+    }
+
+    private void UpdateReloadProgress(float dt)
+    {
+        if (currentWeapon == null)
+        {
+            ResetReloadUI();
+            wasReloading = false;
+            reloadCooldownActive = false;
+            return;
+        }
+        
+        // 시작
+        if (!wasReloading && IsReloading)
+        {
+            ReloadDurationObs.Value = Mathf.Max(0.01f, currentWeapon.Data.ReloadTime);
+            ReloadElapsedObs.Value = 0f;
+            ReloadVisibleObs.Value = true;
+            reloadCompleted = false;
+            reloadCooldownActive = false;
+        }
+
+        // 진행 중
+        if (IsReloading)
+        {
+            ReloadElapsedObs.Value = Mathf.Min(ReloadElapsedObs.Value + dt, ReloadDurationObs.Value);
+
+            if (!reloadCompleted && ReloadElapsedObs.Value >= ReloadDurationObs.Value)
+            {
+                reloadCompleted = true;
+                reloadCompleteTime = Time.time;
+            }
+        }
+
+        // 종료 감지
+        if (wasReloading && !IsReloading)
+        {
+            if (reloadCompleted)
+            {
+                reloadCooldownActive = true;
+                if (reloadCompleteTime <= 0f)
+                    reloadCompleteTime = Time.time;
+            }
+            else
+            {
+                ResetReloadUI(); // 취소
+            }
+        }
+        
+        if (reloadCooldownActive)
+        {
+            if (Time.time - reloadCompleteTime >= 0.2f)
+            {
+                ResetReloadUI();
+            }
+        }
+
+        wasReloading = IsReloading;
+    }
+
+    private void ResetReloadUI()
+    {
+        ReloadVisibleObs.Value = false;
+        ReloadElapsedObs.Value = 0f;
+        reloadCompleted = false;
+        reloadCooldownActive = false;
     }
 
     private void TickAim()
