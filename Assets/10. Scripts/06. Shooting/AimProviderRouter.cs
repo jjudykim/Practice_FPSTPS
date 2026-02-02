@@ -13,8 +13,17 @@ public class AimProviderRouter : MonoBehaviour, IAimProvider
     private IAimProvider firstPersonProvider;
     private IAimProvider quarterViewProvider;
 
+    private Transform fallbackMuzzle;
+
     public Camera AimCamera => CurrentProvider.AimCamera;
-    public Transform Muzzle => CurrentProvider.Muzzle;
+    public Transform Muzzle
+    {
+        get
+        {
+            Transform m = CurrentProvider != null ? CurrentProvider.Muzzle : null;
+            return m != null ? m : fallbackMuzzle;
+        }
+    }
 
     private IAimProvider CurrentProvider
     {
@@ -33,6 +42,14 @@ public class AimProviderRouter : MonoBehaviour, IAimProvider
     {
         firstPersonProvider = firstPersonProviderSource as IAimProvider;
         quarterViewProvider = quarterViewProviderSource as IAimProvider;
+    }
+    
+    public void SetMuzzle(Transform newMuzzle)
+    {
+        fallbackMuzzle = newMuzzle;
+        
+        if (quarterViewProviderSource is QuarterViewAimProvider q)
+            q.SetMuzzle(newMuzzle);
     }
 
     public Ray GetAimRay()

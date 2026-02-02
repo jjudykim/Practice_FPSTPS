@@ -2,12 +2,12 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Serialization;
 
-public class EnemyController : MonoBehaviour
+public class EnemyController : MonoBehaviour, IDamageable
 {
     [Header("References")]
     [SerializeField] private Transform target;
     [SerializeField] private NavMeshAgent agent;
-
+    
     [Header("Stats")] 
     [SerializeField] private int maxHp = 30;
     [SerializeField] private int curHp = 30;
@@ -17,7 +17,8 @@ public class EnemyController : MonoBehaviour
     [SerializeField] private float detectRange = 10f;
     [SerializeField] private float attackRange = 2.2f;
 
-    [Header("Attack")] [SerializeField] private float attackCooldown = 1.0f;
+    [Header("Attack")] [SerializeField] private int attackDamage = 10;
+    [SerializeField] private float attackCooldown = 5.0f;
     private float attackTimer = 0f;
 
     // 스폰 기준점
@@ -34,7 +35,15 @@ public class EnemyController : MonoBehaviour
     private EnemyHitState stateHit;
     private EnemyDeadState stateDead;
 
+    private bool deathHandled = false;
+
+    private Collider[] cachedColliders;
+
+    public bool IsAlive => curHp > 0;
     public bool IsDead => curHp <= 0;
+
+    public int MaxHp => maxHp;
+    public int CurHp => curHp;
 
     private void Reset()
     {
@@ -45,6 +54,13 @@ public class EnemyController : MonoBehaviour
     {
         if (agent == null)
             agent = GetComponent<NavMeshAgent>();
+
+        cachedColliders = GetComponentsInChildren<Collider>(true);
+
+        maxHp = Mathf.Max(1, maxHp);
+        curHp = Mathf.Clamp(curHp, 0, maxHp);
+        
+        attackDamage = Mathf.Max(0, attackDamage);
 
         spawnPos = transform.position;
 
@@ -128,7 +144,15 @@ public class EnemyController : MonoBehaviour
     // ==============================
     public void StopMove()
     {
-        if (agent == null) return;
+        if (agent == null) 
+            return;
+
+        if (agent.enabled == false)
+            return;
+
+        if (agent.isOnNavMesh == false)
+            return;
+        
         agent.isStopped = true;
         agent.ResetPath();
     }
@@ -142,14 +166,12 @@ public class EnemyController : MonoBehaviour
     public void MoveTo(Vector3 worldPos)
     {
         if (agent == null) return;
-
-        // isStopped 상태면 목적지 지정해도 안 움직이니, 호출 측에서 ResumeMove 보장
+        
         agent.SetDestination(worldPos);
     }
     
     public Vector3 PickRandomPatrolPoint()
     {
-        // 스폰 기준 랜덤 점
         Vector2 r = Random.insideUnitCircle * patrolRadius;
         Vector3 candidate = new Vector3(spawnPos.x + r.x, spawnPos.y, spawnPos.z + r.y);
 
@@ -158,8 +180,7 @@ public class EnemyController : MonoBehaviour
         {
             return hit.position;
         }
-
-        // 실패하면 현재 위치
+        
         return transform.position;
     }
     
@@ -171,30 +192,93 @@ public class EnemyController : MonoBehaviour
 
     public void DoAttack()
     {
-        Debug.Log($"[Enemy] Attack! target={ (target != null ? target.name : "null") }");
         attackTimer = attackCooldown;
+
+        if (target == null)
+        {
+            Debug.LogWarning("[Enemy] DoAttack skipped: target is null");
+            return;
+        }
+        
+        if (Managers.Instance.Combat == null)
+        {
+            Debug.LogWarning("[Enemy] DoAttack skipped: CombatSystem.Instance is null");
+            return;
+        }
+        
+        Vector3 hitPoint = target.position;
+        Vector3 hitNormal = (target.position - transform.position).normalized;
+
+        bool dealt = Managers.Instance.Combat.TryDealDamage(
+            attacker: gameObject,
+            victimGO: target.gameObject,
+            damage: attackDamage,
+            hitPoint: hitPoint,
+            hitNormal: hitNormal,
+            hitPart: HitPart.Body,
+            source: "EnemyMelee"
+        );
+
+        Debug.Log($"[Enemy] Attack! target={target.name}, dmg={attackDamage}, dealt={dealt}");
     }
     
 
     // ===========================
     // 피격/죽음
     // ===========================
+    public void ApplyDamage(DamageInfo info)
+    {
+        if (IsDead)
+            return;
+
+        int dmg = Mathf.CeilToInt(Mathf.Max(0f, info.Damage));
+        if (dmg <= 0)
+            return;
+
+        ApplyDamage(dmg);
+    }
+    
     public void ApplyDamage(int damage)
     {
         if (IsDead)
             return;
 
         curHp -= damage;
+        curHp = Mathf.Clamp(curHp, 0, maxHp);
+
         Debug.Log($"[Enemy] Hit! damage={damage}, hp={curHp}/{maxHp}");
 
         if (curHp <= 0)
         {
-            curHp = 0;
+            HandleDeathOnce();
             ToDead();
         }
         else
         {
             ToHit();
         }
+    }
+
+    private void HandleDeathOnce()
+    {
+        if (deathHandled)
+            return;
+
+        deathHandled = true;
+        
+        StopMove();
+        if (agent != null)
+            agent.enabled = false;
+        
+        if (cachedColliders != null)
+        {
+            for (int i = 0; i < cachedColliders.Length; i++)
+            {
+                if (cachedColliders[i] != null)
+                    cachedColliders[i].enabled = false;
+            }
+        }
+
+        Debug.Log("[Enemy] ::: Death handled (colliders off, agent off)");
     }
 }

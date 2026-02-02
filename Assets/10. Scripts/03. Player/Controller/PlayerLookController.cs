@@ -8,6 +8,7 @@ public class PlayerLookController : MonoBehaviour
     [SerializeField] private CameraController cameraController;
     [SerializeField] private Transform playerRoot;
     [SerializeField] private Transform headPivot;
+    [SerializeField] private PlayerCombatController combatController;
     
     [Header("Input Sensitivity")]
     [SerializeField] private float horizontalSensitivity = 1.0f;
@@ -50,6 +51,8 @@ public class PlayerLookController : MonoBehaviour
         Pitch = pitch;
 
         lastMode = cameraController != null ? cameraController.Mode : CameraController.CameraMode.QuarterView;
+        
+        combatController = Player.Instance.GetComponent<PlayerCombatController>();
 
         LookLocalDir = Vector2.up;
         LookDeltaYawDeg = 0f;
@@ -117,6 +120,9 @@ public class PlayerLookController : MonoBehaviour
 
     private void ApplyQuaterRotation()
     {
+        if (combatController != null && combatController.IsAiming)
+            return;
+        
         if (headPivot == null)
             return;
 
@@ -150,7 +156,6 @@ public class PlayerLookController : MonoBehaviour
         float rad = delta * Mathf.Deg2Rad;
         LookLocalDir = new Vector2(Mathf.Sin(rad), Mathf.Cos(rad));
         
- 
         float clampedHeadYaw = Mathf.Clamp(delta, -quarterHeadYawLimit, quarterHeadYawLimit);
         headPivot.localRotation = Quaternion.Euler(-clampedHeadYaw, 0f, 0f);
 

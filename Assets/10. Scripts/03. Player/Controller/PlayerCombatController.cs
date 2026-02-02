@@ -361,15 +361,22 @@ public class PlayerCombatController : MonoBehaviour
         if (TryGetQuarterAimPoint(out Vector3 aimPoint) == false)
             return;
 
-        Vector3 dir = aimPoint - transform.position;
-        dir.y = 0f;
+        Vector3 origin = transform.position;
+        if (aimProvider != null && aimProvider.Muzzle != null)
+            origin = aimProvider.Muzzle.position;
+        
+        Debug.DrawLine(origin, aimPoint, Color.magenta, 0.1f);
+        Debug.DrawRay(origin, transform.forward * 5f, Color.cyan, 0.1f);
+        if (aimProvider != null && aimProvider.Muzzle != null)
+            Debug.DrawRay(origin, aimProvider.Muzzle.forward * 5f, Color.red, 0.1f);
 
+        
+        Vector3 dir = aimPoint - origin;
         if (dir.sqrMagnitude < 0.0001f)
             return;
 
-        Quaternion targetRot = Quaternion.LookRotation(dir.normalized, Vector3.up);
-
-        // 부드러운 회전(프레임레이트 독립)
+        Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up);
+        
         float t = 1f - Mathf.Exp(-quarterAimTurnSpeed * Time.deltaTime);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
     }
@@ -445,47 +452,15 @@ public class PlayerCombatController : MonoBehaviour
         // 쿼터뷰: 조준점 기준으로 AimX/AimY 세팅
         if (cameraController != null && cameraController.Mode == CameraController.CameraMode.QuarterView)
         {
-            if (IsWeaponEquipped == false)
-            {
-                animator.SetFloat(AIM_X, 0f);
-                animator.SetFloat(AIM_Y, 0f);
-                return;
-            }
-
-            if (TryGetQuarterAimPoint(out Vector3 aimPoint) == false)
-            {
-                animator.SetFloat(AIM_X, 0f);
-                animator.SetFloat(AIM_Y, 0f);
-                return;
-            }
-
-            Vector3 dir = aimPoint - transform.position;
-            dir.y = 0f;
-
-            if (dir.sqrMagnitude < 0.0001f)
-            {
-                animator.SetFloat(AIM_X, 0f);
-                animator.SetFloat(AIM_Y, 0f);
-                return;
-            }
-
-            dir.Normalize();
-
-            Vector3 local = transform.InverseTransformDirection(dir);
-
-            animator.SetFloat(AIM_X, local.x);
-            animator.SetFloat(AIM_Y, local.z);
+            animator.SetFloat(AIM_X, 0f);
+            animator.SetFloat(AIM_Y, 0f);
             return;
         }
-
-        animator.SetFloat(AIM_X, 0f);
-        animator.SetFloat(AIM_Y, 0f);
     }
 
     private void HandleShotFired()
     {
         animator.SetTrigger(TRIGGER_FIRE);
-        Debug.Log("[PlayerCombatCtrl] ::: Fire Anim Triggered (OnShotFired)");
     }
 
     private void TickFire()
@@ -500,8 +475,6 @@ public class PlayerCombatController : MonoBehaviour
         if (fireDown)
         {
             currentWeapon.TriggerDown();
-
-            Debug.Log("[PlayerCombatCtrl] ::: Fire Down");
             return;
         }
 

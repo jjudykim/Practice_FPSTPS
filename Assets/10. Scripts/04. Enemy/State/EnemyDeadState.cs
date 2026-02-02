@@ -13,9 +13,6 @@ public class EnemyDeadState : IEnemyState
 
     public void Enter()
     {
-        owner.SetLock(true);
-        owner.StopMove();
-
         despawnTimer = 1.0f;
         Debug.Log("[Enemy] ::: Enter Dead");
     }
