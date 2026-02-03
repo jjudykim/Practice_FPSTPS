@@ -1,30 +1,34 @@
 using System;
 using System.Collections;
 using System.Reflection;
+using jjudy;
 using UnityEngine;
 
 public class WeaponBase : MonoBehaviour, IWeapon
 {
-    [Header("RuntimeData (Injected)")] [SerializeField]
-    private WeaponData data;
-
+    [Header("RuntimeData (Injected)")] 
+    [SerializeField] private WeaponData data;
     [SerializeField] private WeaponContext context;
 
-    [Header("Ammo")] [SerializeField] private BulletData bullet;
+    [Header("Ammo")] 
+    [SerializeField] private BulletData bullet;
 
-    [Header("Model")] [SerializeField] private GameObject model;
+    [Header("Model")]
+    [SerializeField] private GameObject model;
 
-    [Header("IK")] public Transform AttachPoint;
+    [Header("IK")] 
+    public Transform AttachPoint;
     [Range(0.0f, 1.0f)] public float ikWeight;
 
-    [Header("Refs")] [SerializeField] private Transform muzzle;
+    [Header("Refs")] 
+    [SerializeField] private Transform muzzle;
     [SerializeField] private HitscanShooter hitscanShooter;
 
+    private readonly ObservableIntValue ammo = new ObservableIntValue(0);
+    
     // Runtime
-    private int currentAmmo;
     private bool isReloading;
     private float nextFireTime;
-
     private Coroutine reloadCoroutine;
 
     // Fire 성공 시 호출 이벤트
@@ -34,7 +38,8 @@ public class WeaponBase : MonoBehaviour, IWeapon
     public WeaponData Data => data;
 
     public bool IsReloading => isReloading;
-    public int CurrentAmmo => currentAmmo;
+    public int CurrentAmmo => ammo.Value;
+    public ObservableIntValue Ammo => ammo;
 
     private void Awake()
     {
@@ -44,7 +49,7 @@ public class WeaponBase : MonoBehaviour, IWeapon
         if (data != null)
         {
             data.ValidateAndClamp();
-            currentAmmo = data.MagazineSize;
+            ammo.Value = data.MagazineSize;
         }
 
         if (bullet != null && string.IsNullOrEmpty(bullet.Id))
@@ -66,7 +71,7 @@ public class WeaponBase : MonoBehaviour, IWeapon
         if (data != null)
         {
             data.ValidateAndClamp();
-            currentAmmo = data.MagazineSize;
+            ammo.Value = data.MagazineSize;
         }
 
         isReloading = false;
@@ -79,9 +84,17 @@ public class WeaponBase : MonoBehaviour, IWeapon
         }
 
         EnsureBulletCompatibilityOrNull();
-
         ResolveHardpoints();
         BindAimProviderHardpoints();
+    }
+
+    public void SetCurrentAmmo(int newAmmo)
+    {
+        if (data == null)
+            return;
+
+        int clamped = Mathf.Clamp(newAmmo, 0, data.MagazineSize);
+        Ammo.Value = clamped;
     }
 
     public void SetBullet(BulletData bulletData)
@@ -130,7 +143,7 @@ public class WeaponBase : MonoBehaviour, IWeapon
         if (isReloading)
             return;
 
-        if (currentAmmo >= data.MagazineSize)
+        if (ammo.Value >= data.MagazineSize)
             return;
 
         if (reloadCoroutine != null)
@@ -165,8 +178,8 @@ public class WeaponBase : MonoBehaviour, IWeapon
 
         yield return new WaitForSeconds(data.ReloadTime);
 
-        currentAmmo = data.MagazineSize;
-
+        ammo.Value = data.MagazineSize;
+   
         isReloading = false;
         reloadCoroutine = null;
     }
@@ -213,7 +226,7 @@ public class WeaponBase : MonoBehaviour, IWeapon
             return;
         }
 
-        if (currentAmmo <= 0)
+        if (ammo.Value <= 0)
         {
             Debug.Log("[WeaponBase] ammo empty -> Reload()");
             return;
@@ -229,7 +242,7 @@ public class WeaponBase : MonoBehaviour, IWeapon
         GameObject attacker = transform.root.gameObject;
         hitscanShooter.Fire(attacker, context.AimProvider, muzzle, data, isADS, finalDamage);
 
-        currentAmmo--;
+        ammo.Value--;
 
         // 소음 이벤트
         EmitNoise(data.NoiseRadius);
