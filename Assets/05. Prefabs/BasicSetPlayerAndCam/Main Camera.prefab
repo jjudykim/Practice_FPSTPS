@@ -155,9 +155,12 @@ MonoBehaviour:
   headPivot: {fileID: 0}
   firstPersonAnchor: {fileID: 0}
   startMode: 1
+  normalCursor: {fileID: 2800000, guid: 30d403466e92f5746b5aebbc6d7598e8, type: 3}
   positionSmooth: 18
   firstPersonFov: 65
   lockCursorInFirstPerson: 1
+  aimForwardOffset: 0.06
+  aimFirstPersonFov: 50
   quarterFov: 55
   fixedQuarterRot: {x: 45, y: 135, z: 0}
   quarterOffset: {x: -4, y: 7.5, z: 5}

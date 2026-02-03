@@ -9,91 +9,17 @@ public class HitscanShooter : MonoBehaviour
     [Header("Debug")] 
     [SerializeField] private bool debugDraw = true;
 
-    public void Fire(IAimProvider aimProvider, Transform muzzle, WeaponData data, bool isADS)
-    {
-        if (aimProvider == null || data == null)
-            return;
-
-        // 0) 발사 원점 (총구)
-        Vector3 muzzleOrigin = muzzle.position;
-        
-        // 1) 카메라 중앙 Ray 확보 (조준 기준)
-        Ray camRay = aimProvider.GetAimRay();
-
-        // 사거리
-        float aimMaxDistance = Mathf.Max(data.EffectiveRange, 10f) * 5f;
-
-        // 2) "퍼짐"은 카메라 방향 기준으로 적용
-        float spreadAngleDeg = isADS ? data.ADS_Spread : Mathf.Max(data.ADS_Spread * 3f, data.ADS_Spread);
-
-        Vector3 camDir = camRay.direction.normalized;
-        Vector3 camDirWithSpread = ApplySpread(camDir, spreadAngleDeg);
-
-        Ray camSpreadRay = new Ray(camRay.origin, camDirWithSpread);
-        
-        Vector3 aimPoint;
-        bool aimed = false;
-
-        if (Physics.Raycast(camSpreadRay, out RaycastHit camHit, aimMaxDistance
-                          , aimMask, QueryTriggerInteraction.Ignore))
-        {
-            aimPoint = camHit.point;
-            aimed = true;
-        }
-        else
-        {
-            aimPoint = camSpreadRay.origin + camSpreadRay.direction * aimMaxDistance;
-        }
-        
-        // 3) 총구 -> aimPoint로 발사 방향 보정
-        Vector3 muzzleDir = (aimPoint - muzzleOrigin).normalized;
-
-        // 4) 총구 앞 장애물 체크
-        float toAimDistance = Vector3.Distance(muzzleOrigin, aimPoint);
-        if (Physics.Raycast(muzzleOrigin, muzzleDir
-                          , out RaycastHit muzzleBlockHit, toAimDistance
-                          , hitMask, QueryTriggerInteraction.Ignore))
-        {
-            aimPoint = muzzleBlockHit.point;
-        }
-        
-        // 5) 실제 피격 판정 (총구 기준 Ray로)
-        Ray fireRay = new Ray(muzzleOrigin, (aimPoint - muzzleOrigin).normalized);
-        float fireMaxDistance = aimMaxDistance;
-
-        if (Physics.Raycast(fireRay, out RaycastHit hit, fireMaxDistance, hitMask, QueryTriggerInteraction.Ignore))
-        {
-            float damage = ComputeDamageWithRange(data, hit.distance);
-
-            // TODO : 치명타 / 헤드샷 판정 나중에 추가
-            bool isCritical = false;
-            if (isCritical)
-                damage *= data.CriticalDamageMultiplier;
-
-            Debug.Log($"[HitscanShooter] Hit={hit.collider.name}, dist={hit.distance:F1}, dmg={damage:F1}, aimed={aimed}, ads={isADS}");
-
-            if (debugDraw)
-                Debug.DrawLine(muzzleOrigin, hit.point, Color.red, 0.1f);
-        }
-        else
-        {
-            if (debugDraw)
-                Debug.DrawLine(muzzleOrigin, muzzleOrigin + fireRay.direction * fireMaxDistance, Color.yellow, 0.1f);
-        }
-        
-        if (debugDraw)
-        {
-            Debug.DrawRay(camRay.origin, camRay.direction * 3f, Color.green, 0.1f);
-            Debug.DrawRay(camSpreadRay.origin, camSpreadRay.direction * 3f, Color.cyan, 0.1f);
-            Debug.DrawRay(muzzleOrigin, (aimPoint - muzzleOrigin).normalized * 3f, Color.red, 0.1f);
-        }
-    }
+    private const QueryTriggerInteraction HIT_QUERY = QueryTriggerInteraction.Collide;
+    
     
     // 데미지 계수 적용 Ver
-    public void Fire(IAimProvider aimProvider, Transform muzzle, WeaponData weaponData, bool isADS, float finalDamage)
+    public void Fire(GameObject attacker, IAimProvider aimProvider, Transform muzzle, WeaponData weaponData, bool isADS, float finalDamage)
     {
-        if (aimProvider == null || weaponData == null)
+        if (aimProvider == null || weaponData == null || muzzle == null)
+        {
+            Debug.LogWarning($"[HitscanShooter] Fire blocked. aimProvider={(aimProvider!=null)}, weaponData={(weaponData!=null)}, muzzle={(muzzle!=null)}");
             return;
+        }
         
          // 0) 발사 원점 (총구)
         Vector3 muzzleOrigin = muzzle.position;
@@ -141,32 +67,44 @@ public class HitscanShooter : MonoBehaviour
         Ray fireRay = new Ray(muzzleOrigin, (aimPoint - muzzleOrigin).normalized);
         float fireMaxDistance = aimMaxDistance;
 
-        if (Physics.Raycast(fireRay, out RaycastHit hit, fireMaxDistance, hitMask, QueryTriggerInteraction.Ignore))
+        if (Physics.Raycast(fireRay, out RaycastHit hit, fireMaxDistance, hitMask, HIT_QUERY))
         {
-            
+
             float damage = ComputeDamageWithRange(finalDamage, weaponData.EffectiveRange, hit.distance);
 
-            // TODO : 치명타 / 헤드샷 판정 나중에 추가
-            bool isCritical = false;
-            if (isCritical)
-                damage *= weaponData.CriticalDamageMultiplier;
+            HitPart hitPart = HitPart.Body;
+            float partMultiplier = 1.0f;
 
-            Debug.Log($"[HitscanShooter] Hit={hit.collider.name}, dist={hit.distance:F1}, dmg={damage:F1}, aimed={aimed}, ads={isADS}");
+            EnemyHitbox enemyHitbox = hit.collider.GetComponent<EnemyHitbox>();
+            if (enemyHitbox != null)
+            {
+                hitPart = enemyHitbox.Part;
+                partMultiplier = enemyHitbox.DamageMultiplier;
+            }
+
+            float final = damage * partMultiplier;
+
+            Debug.Log($"[HitscanShooter] Hit={hit.collider.name}, part={hitPart}, dist={hit.distance:F1}, dmg={final:F1} (base={damage:F1}*{partMultiplier:F1}), aimed={aimed}, ads={isADS}");
+
+            if (Managers.Instance.Combat != null)
+            {
+                Managers.Instance.Combat.TryDealDamage(
+                    attacker: attacker,
+                    hitCollider: hit.collider,
+                    damage: final,
+                    hitPoint: hit.point,
+                    hitNormal: hit.normal,
+                    hitPart: hitPart,
+                    source: hitPart == HitPart.Head ? "HitscanHeadshot" : "HitscanBody"
+                );
+            }
+            else
+            {
+                Debug.LogWarning("[HitscanShooter] CombatSystem.Instance is null.");
+            }
 
             if (debugDraw)
                 Debug.DrawLine(muzzleOrigin, hit.point, Color.red, 0.1f);
-        }
-        else
-        {
-            if (debugDraw)
-                Debug.DrawLine(muzzleOrigin, muzzleOrigin + fireRay.direction * fireMaxDistance, Color.yellow, 0.1f);
-        }
-
-        if (debugDraw)
-        {
-            Debug.DrawRay(camRay.origin, camRay.direction * 3f, Color.green, 0.1f);
-            Debug.DrawRay(camSpreadRay.origin, camSpreadRay.direction * 3f, Color.cyan, 0.1f);
-            Debug.DrawRay(muzzleOrigin, (aimPoint - muzzleOrigin).normalized * 3f, Color.red, 0.1f);
         }
     }
     

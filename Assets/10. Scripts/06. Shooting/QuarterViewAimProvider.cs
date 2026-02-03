@@ -16,6 +16,17 @@ public class QuarterViewAimProvider : MonoBehaviour, IAimProvider
             aimCamera = Camera.main;
     }
 
+    private void Awake()
+    {
+        if (aimCamera == null)
+            aimCamera = Camera.main;
+    }
+
+    public void SetMuzzle(Transform newMuzzle)
+    {
+        muzzle = newMuzzle;
+    }
+
     public Ray GetAimRay()
     {
         if (aimCamera == null)
@@ -29,7 +40,7 @@ public class QuarterViewAimProvider : MonoBehaviour, IAimProvider
     {
         Ray ray = GetAimRay();
 
-        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, mask, QueryTriggerInteraction.Ignore))
+        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, mask, QueryTriggerInteraction.Collide))
         {
             hitPoint = hit.point;
             return true;

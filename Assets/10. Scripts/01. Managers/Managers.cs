@@ -7,6 +7,8 @@ public class Managers : SingletonBase<Managers>
     public InputManager Input { get; private set; }
     public SaveDataManager SaveData { get; private set; }
 
+    public CombatManager Combat { get; private set; }
+
     protected override void OnInitialize()
     {
         base.OnInitialize();
@@ -14,6 +16,7 @@ public class Managers : SingletonBase<Managers>
         Game = new GameManager();
         Input = new InputManager();
         SaveData = new SaveDataManager();
+        Combat = new CombatManager();
 
         Game.Awake();
     }
