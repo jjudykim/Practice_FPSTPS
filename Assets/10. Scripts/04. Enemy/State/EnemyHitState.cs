@@ -3,7 +3,9 @@ using UnityEngine;
 public class EnemyHitState : IEnemyState
 {
     private readonly EnemyController owner;
-    private float stunTimer;
+
+    private float hitTimer;
+    private const float HIT_MIN_DURATION = 0.5f;
 
     public bool IsForced => true;
 
@@ -17,7 +19,10 @@ public class EnemyHitState : IEnemyState
         owner.SetLock(true);
         owner.StopMove();
 
-        stunTimer = 0.2f;
+        owner.AnimTriggerDamage();
+        owner.SetChaseSpeed(false);
+        hitTimer = HIT_MIN_DURATION;
+        
         Debug.Log("[Enemy] ::: Enter Hit");
     }
 
@@ -29,17 +34,37 @@ public class EnemyHitState : IEnemyState
             return;
         }
 
-        stunTimer -= dt;
-        if (stunTimer <= 0f)
+        hitTimer -= dt;
+        if (hitTimer > 0f)
+            return;
+
+        owner.SetLock(false);
+        
+        if (owner.HasTarget() == false)
         {
-            owner.SetLock(false);
-            owner.ToDetect();
+            owner.ToIdle();
+            return;
         }
+
+        if (owner.IsTargetInAttackRange())
+        {
+            owner.ToAttack();
+            return;
+        }
+
+        if (owner.IsTargetInDetectRange())
+        {
+            owner.ToChase();
+            return;
+        }
+
+        owner.ToIdle();
     }
 
 
     public void Exit()
     {
+        owner.ResumeMove();
         Debug.Log("[Enemy] ::: Exit Hit");
     }
 }

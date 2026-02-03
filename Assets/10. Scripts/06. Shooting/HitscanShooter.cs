@@ -75,11 +75,11 @@ public class HitscanShooter : MonoBehaviour
             HitPart hitPart = HitPart.Body;
             float partMultiplier = 1.0f;
 
-            Hitbox hitbox = hit.collider.GetComponent<Hitbox>();
-            if (hitbox != null)
+            EnemyHitbox enemyHitbox = hit.collider.GetComponent<EnemyHitbox>();
+            if (enemyHitbox != null)
             {
-                hitPart = hitbox.Part;
-                partMultiplier = hitbox.DamageMultiplier;
+                hitPart = enemyHitbox.Part;
+                partMultiplier = enemyHitbox.DamageMultiplier;
             }
 
             float final = damage * partMultiplier;

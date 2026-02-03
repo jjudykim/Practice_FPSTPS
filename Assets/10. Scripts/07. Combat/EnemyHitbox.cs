@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Hitbox : MonoBehaviour
+public class EnemyHitbox : MonoBehaviour
 {
     [Header("Hitbox")]
     [SerializeField] private HitPart part = HitPart.Body;
