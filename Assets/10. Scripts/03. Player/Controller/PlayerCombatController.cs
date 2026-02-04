@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using jjudy;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -25,6 +26,7 @@ public class PlayerCombatController : MonoBehaviour
     [SerializeField] private PlayerLookController lookController;
     [SerializeField] private PlayerMoveController moveController;
     [SerializeField] private CameraController cameraController;
+    [SerializeField] private AimLineController aimLineController;
 
     [Header("QuarterView Aim Facing")]
     [SerializeField] private float quarterAimTurnSpeed = 18f;     // 회전 보간 속도
@@ -43,10 +45,13 @@ public class PlayerCombatController : MonoBehaviour
 
     [Header("UI")]
     [SerializeField] private CrosshairUI crosshairUI;
+    [SerializeField] private WeaponMagazineUIBinder magazineBinder;
 
     private IAimProvider aimProvider;
     private WeaponBase currentWeapon;
-
+    
+    private readonly Dictionary<string, int> savedAmmoByWeaponKey = new Dictionary<string, int>();
+    
     public ObservableValue<float> ReloadElapsedObs { get; } = new ObservableValue<float>(0f);
     public ObservableValue<float> ReloadDurationObs { get; } = new ObservableValue<float>(1f);
     public ObservableValue<bool> ReloadVisibleObs { get; } = new ObservableValue<bool>(false);
@@ -133,6 +138,9 @@ public class PlayerCombatController : MonoBehaviour
 
         if (animator != null && string.IsNullOrEmpty(upperBodyLayerName) == false)
             upperBodyLayerIndex = animator.GetLayerIndex(upperBodyLayerName);
+
+        if (magazineBinder == null)
+            magazineBinder = FindObjectOfType<WeaponMagazineUIBinder>(true);
 
         ApplyAnimatorBools();
         ApplyAimDirectionParams();
@@ -225,6 +233,9 @@ public class PlayerCombatController : MonoBehaviour
 
         if (IsWeaponEquipped)
         {
+            // =================================
+            // 1) Equip
+            // =================================
             currentWeapon = weaponRoot.Equip(weaponPrefabForTest);
             
             if (currentWeapon == null)
@@ -236,21 +247,50 @@ public class PlayerCombatController : MonoBehaviour
                 RefreshRigWeights();
                 return;
             }
+            
+            string key = GetWeaponKey(currentWeapon);
+            if (string.IsNullOrEmpty(key) == false 
+                && savedAmmoByWeaponKey.TryGetValue(key, out int savedAmmo))
+            {
+                currentWeapon.SetCurrentAmmo(savedAmmo);
+            }
 
             animator.SetTrigger(TRIGGER_EQUIP);
+            
             BindWeaponEvents(currentWeapon);
+            magazineBinder.Bind(currentWeapon);
+            
             ResetReloadUI();
         }
         else
         {
-            weaponRoot.Unequip();
-            currentWeapon = null;
-            animator.SetTrigger(TRIGGER_UNEQUIP);
-            UnbindWeaponEvents(currentWeapon);
-            ResetReloadUI();
+            // =================================
+            // 2) Unequip
+            // =================================
+            WeaponBase prevWeapon = currentWeapon;
+            
+            if (prevWeapon != null)
+            {
+                string key = GetWeaponKey(prevWeapon);
+                if (string.IsNullOrEmpty(key) == false)
+                {
+                    savedAmmoByWeaponKey[key] = prevWeapon.CurrentAmmo;
+                }
+            }
 
             if (IsAiming)
                 SetAiming(false);
+            
+            animator.SetTrigger(TRIGGER_UNEQUIP);
+            
+            magazineBinder.Unbind();
+            
+            UnbindWeaponEvents(currentWeapon);
+            
+            weaponRoot.Unequip();
+            currentWeapon = null;
+            
+            ResetReloadUI();
         }
 
         ApplyAnimatorBools();
@@ -325,6 +365,14 @@ public class PlayerCombatController : MonoBehaviour
         ReloadElapsedObs.Value = 0f;
         reloadCompleted = false;
         reloadCooldownActive = false;
+    }
+
+    private string GetWeaponKey(WeaponBase weapon)
+    {
+        if (weapon == null || weapon.Data == null)
+            return string.Empty;
+
+        return weapon.Data.Id;
     }
 
     private void TickAim()
@@ -412,6 +460,7 @@ public class PlayerCombatController : MonoBehaviour
     {
         IsAiming = aiming;
 
+        aimLineController.SetAiming(aiming);
         ApplyAnimatorBools();
         PushWeaponContext();
         RefreshCrosshairVisibility();
@@ -619,5 +668,14 @@ public class PlayerCombatController : MonoBehaviour
             ApplyUpperBodyLayerWeight(upperBodyWeightAiming);
         else
             ApplyUpperBodyLayerWeight(upperBodyWeightEquipped);
+    }
+
+    public float GetCurrentWeaponAimMaxDistance(float fallback)
+    {
+        if (currentWeapon == null || currentWeapon.Data == null)
+            return Mathf.Max(0.1f, fallback);
+        
+        float effective = Mathf.Max(currentWeapon.Data.EffectiveRange, 10f);
+        return effective * 5f;
     }
 }

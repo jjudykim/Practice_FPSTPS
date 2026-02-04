@@ -50,6 +50,9 @@ public class AimProviderRouter : MonoBehaviour, IAimProvider
         
         if (quarterViewProviderSource is QuarterViewAimProvider q)
             q.SetMuzzle(newMuzzle);
+        
+        if (firstPersonProviderSource is FirstPersonAimProvider f)
+            f.SetMuzzle(newMuzzle);
     }
 
     public Ray GetAimRay()

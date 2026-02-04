@@ -14,8 +14,8 @@ TagManager:
   - UI
   - Aimable
   - Hittable
-  - 
-  - 
+  - MinimapGeometry
+  - MinimapMarker
   - 
   - 
   - 

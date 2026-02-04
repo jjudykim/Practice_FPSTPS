@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class FirstPersonAimProvider : MonoBehaviour, IAimProvider
@@ -13,6 +14,17 @@ public class FirstPersonAimProvider : MonoBehaviour, IAimProvider
     {
         if (aimCamera == null)
             aimCamera = Camera.main;
+    }
+
+    private void Awake()
+    {
+        if (aimCamera == null)
+            aimCamera = Camera.main;
+    }
+
+    public void SetMuzzle(Transform newMuzzle)
+    {
+        muzzle = newMuzzle;
     }
 
     public Ray GetAimRay()

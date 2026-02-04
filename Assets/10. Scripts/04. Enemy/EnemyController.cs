@@ -1,8 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Serialization;
+using Random = UnityEngine.Random;
 
 public class EnemyController : MonoBehaviour, IDamageable
 {
@@ -101,6 +103,8 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     public int MaxHp => maxHp;
     public int CurHp => curHp;
+
+    public event Action<EnemyController> OnDead;
     
     // =================================
     //        Animator Param Hash
@@ -610,6 +614,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         }
 
         Debug.Log("[Enemy] ::: Death handled (colliders off, agent off)");
+        OnDead?.Invoke(this);
     }
     
     private void ApplyTypeModifiers()

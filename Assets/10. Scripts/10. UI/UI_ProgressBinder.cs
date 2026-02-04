@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class WorldUI_ProgressBinder : MonoBehaviour
+public class UI_ProgressBinder : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private PlayerCombatController combat;
@@ -40,6 +40,7 @@ public class WorldUI_ProgressBinder : MonoBehaviour
 
     private void OnDestroy()
     {
-        staminaVM.Dispose();
+        staminaVM?.Dispose();
+        ReloadFillVM?.Dispose();
     }
 }
