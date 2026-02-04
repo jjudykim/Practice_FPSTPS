@@ -406,6 +406,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1721480460}
     m_Modifications:
+    - target: {fileID: 2251773091668243268, guid: 339abe7742b00794aa63e4d2bf6267fa, type: 3}
+      propertyPath: m_Color.a
+      value: 0.3137255
+      objectReference: {fileID: 0}
     - target: {fileID: 3589929369921189348, guid: 339abe7742b00794aa63e4d2bf6267fa, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
@@ -493,6 +497,30 @@ PrefabInstance:
     - target: {fileID: 7298049108684768339, guid: 339abe7742b00794aa63e4d2bf6267fa, type: 3}
       propertyPath: m_Name
       value: MapUIPanel
+      objectReference: {fileID: 0}
+    - target: {fileID: 7964866885498213108, guid: 339abe7742b00794aa63e4d2bf6267fa, type: 3}
+      propertyPath: m_Type
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7964866885498213108, guid: 339abe7742b00794aa63e4d2bf6267fa, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 103ba97838400454ab58fa34c508cbbb, type: 3}
+    - target: {fileID: 7964866885498213108, guid: 339abe7742b00794aa63e4d2bf6267fa, type: 3}
+      propertyPath: m_Color.a
+      value: 0.62352943
+      objectReference: {fileID: 0}
+    - target: {fileID: 7964866885498213108, guid: 339abe7742b00794aa63e4d2bf6267fa, type: 3}
+      propertyPath: m_Color.b
+      value: 0.15567288
+      objectReference: {fileID: 0}
+    - target: {fileID: 7964866885498213108, guid: 339abe7742b00794aa63e4d2bf6267fa, type: 3}
+      propertyPath: m_Color.g
+      value: 0.5283019
+      objectReference: {fileID: 0}
+    - target: {fileID: 7964866885498213108, guid: 339abe7742b00794aa63e4d2bf6267fa, type: 3}
+      propertyPath: m_Color.r
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8112264876861296771, guid: 339abe7742b00794aa63e4d2bf6267fa, type: 3}
       propertyPath: m_SizeDelta.x
@@ -1006,14 +1034,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.5019608}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 5456382b90b17034b80badae391b5493, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1

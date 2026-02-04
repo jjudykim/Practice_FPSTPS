@@ -2,12 +2,15 @@ using System;
 using System.Collections;
 using System.IO;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 
 public class GameManager
 {
     public MapRunCache MapCache { get; private set; } = new MapRunCache();
     public bool HasActiveMap => MapCache != null && MapCache.HasGraph;
+    
+    private readonly string mapSceneName = "MapScene";
     
     public void Awake()
     {
@@ -58,16 +61,15 @@ public class GameManager
         if (result.Type == RoomResultType.Cleared)
         {
             Debug.Log($"[GameManager] Room Cleared. nodeId={result.NodeId}, time={result.ClearTime}, kills={result.KillCount}");
-
-            // ✅ 여기서 다음 노드 선택 화면으로 이동
-            // 예) MapSelect 씬으로 돌아가거나, Overlay UI를 띄우거나 등
-            // Managers.Instance.UI.OpenMapSelection(); 같은 형태로 연결
+            
             // TODO: OpenMapUI();
+            if (string.IsNullOrEmpty(mapSceneName))
+                return;
+        
+            SceneManager.LoadScene(mapSceneName);
+            
             // 보상/업적/해금 트리거는 "런 결과 파이프라인"에서 처리 (여기서 하거나 별도 시스템으로 위임)
             // TODO: ApplyRoomRewards(result);
-            
-            // 다음 노드 선택은 UI(맵 화면)에서 하거나 자동 선택 로직으로 처리
-            // 예: 맵 UI로 돌아가서 선택하게 만들기
             return;
         }
 

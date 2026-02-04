@@ -64,7 +64,7 @@ public class CameraController : MonoBehaviour
         if (Managers.Instance == null || Managers.Instance.Input == null)
             return;
 
-        if (Managers.Instance.Input.ViewChange)
+        if (Managers.Instance.Input.ViewChange && IsDialogOpen() == false)
             ToggleMode();
 
         switch (currentMode)
@@ -73,9 +73,14 @@ public class CameraController : MonoBehaviour
                 TickFirstPerson();
                 break;
             case CameraMode.QuarterView:
-                TickQuaterView();
+                TickQuarterView();
                 break;
         }
+    }
+    
+    private bool IsDialogOpen()
+    {
+        return (DialogManager.Instance != null && DialogManager.Instance.IsOpen);
     }
 
     public void SetQuarterViewCursorHidden(bool hidden)
@@ -118,7 +123,7 @@ public class CameraController : MonoBehaviour
         }
     }
     
-    private void TickQuaterView()
+    private void TickQuarterView()
     {
         if (playerRoot == null)
             return;

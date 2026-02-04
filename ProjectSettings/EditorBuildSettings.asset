@@ -12,8 +12,8 @@ EditorBuildSettings:
     path: Assets/00. Scenes/Debug/04. Town.unity
     guid: 4ad692cc80ef87d4a8581b08565a070f
   - enabled: 1
-    path: Assets/00. Scenes/TestMapScene.unity
-    guid: 86e060feac7276a4e9679ae362ad9b7b
+    path: Assets/00. Scenes/InGame/MapScene.unity
+    guid: 7150a36b3ed574d4c8cb3d4c32072fb5
   - enabled: 1
     path: Assets/00. Scenes/TestMapScenes/TestBossScene1.unity
     guid: 3dd1d7d4634cc5d43a951f9fd8179320
@@ -26,6 +26,18 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/00. Scenes/TestMapScenes/TestCombatScene1.unity
     guid: 71b63828180d376498195b3e19057871
+  - enabled: 1
+    path: Assets/00. Scenes/TestMapScenes/TestCombatScene2.unity
+    guid: b67d1e624dcea8c46a4991119a8b69a2
+  - enabled: 1
+    path: Assets/00. Scenes/TestMapScenes/TestCombatScene3.unity
+    guid: 300630b64e5386548af3a6b53178c2b5
+  - enabled: 1
+    path: Assets/00. Scenes/TestMapScenes/TestCombatScene4.unity
+    guid: 527a572d256308c479915ffbb749a4e8
+  - enabled: 1
+    path: Assets/00. Scenes/TestMapScenes/TestCombatScene5.unity
+    guid: 3470da8c98a7f464489108a083c02b6e
   - enabled: 1
     path: Assets/00. Scenes/TestMapScenes/TestRewardScene1.unity
     guid: 910bce53b6e6d2e47b86040065bee4ee

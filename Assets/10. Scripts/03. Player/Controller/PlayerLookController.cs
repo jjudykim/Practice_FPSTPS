@@ -33,8 +33,9 @@ public class PlayerLookController : MonoBehaviour
     private float pitch;
 
     private InputManager input;
-
     private CameraController.CameraMode lastMode;
+    
+    private bool lookEnabled = true;
 
     private void Awake()
     {
@@ -61,6 +62,24 @@ public class PlayerLookController : MonoBehaviour
             LookWorldDirFlat.Normalize();
     }
 
+    private void OnEnable()
+    {
+        if (DialogManager.Instance != null)
+            DialogManager.Instance.OnDialogOpenChanged += HandleDialogOpenChanged;
+    }
+    
+    private void OnDisable()
+    {
+        if (DialogManager.Instance != null)
+            DialogManager.Instance.OnDialogOpenChanged -= HandleDialogOpenChanged;
+    }
+    
+    private void HandleDialogOpenChanged(bool isOpen)
+    {
+        // Dialog 열리면 Look 차단, 닫히면 재개
+        lookEnabled = !isOpen;
+    }
+
     private void Update()
     {
         if (cameraController.Mode != lastMode)
@@ -84,7 +103,7 @@ public class PlayerLookController : MonoBehaviour
                 UpdateAimData_FirstPerson();
                 break;
             case CameraController.CameraMode.QuarterView:
-                ApplyQuaterRotation();
+                ApplyQuarterRotation();
                 break;
         }
     }
@@ -118,8 +137,11 @@ public class PlayerLookController : MonoBehaviour
             headPivot.localRotation = Quaternion.Euler(0f, 0f, -Pitch);
     }
 
-    private void ApplyQuaterRotation()
+    private void ApplyQuarterRotation()
     {
+        if (lookEnabled == false)
+            return;
+        
         if (combatController != null && combatController.IsAiming)
             return;
         

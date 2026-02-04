@@ -779,7 +779,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RoomClearExitController
   clearButton: {fileID: 738807489}
   exitButton: {fileID: 1207207002}
-  mapSceneName: TestMapScene
+  mapSceneName: MapScene
 --- !u!4 &837268640
 Transform:
   m_ObjectHideFlags: 0
