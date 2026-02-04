@@ -9,6 +9,18 @@ public class ProgressViewModel<T> : IDisposable where T : struct
     private readonly ObservableValue<T> max;
     private readonly Func<T, float> toFloat;
 
+    public float Ratio
+    {
+        get
+        {
+            float fCur = toFloat(current.Value);
+            float fMax = toFloat(this.max.Value);
+
+            float ratio = (fMax <= 0f) ? 00f : fCur / fMax;
+            return ratio;
+        }
+    }
+
     public ProgressViewModel(ObservableValue<T> current, ObservableValue<T> max, Func<T, float> toFloat)
     {
         this.current = current;
