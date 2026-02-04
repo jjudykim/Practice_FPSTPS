@@ -26,6 +26,7 @@ public class PlayerCombatController : MonoBehaviour
     [SerializeField] private PlayerLookController lookController;
     [SerializeField] private PlayerMoveController moveController;
     [SerializeField] private CameraController cameraController;
+    [SerializeField] private AimLineController aimLineController;
 
     [Header("QuarterView Aim Facing")]
     [SerializeField] private float quarterAimTurnSpeed = 18f;     // 회전 보간 속도
@@ -459,6 +460,7 @@ public class PlayerCombatController : MonoBehaviour
     {
         IsAiming = aiming;
 
+        aimLineController.SetAiming(aiming);
         ApplyAnimatorBools();
         PushWeaponContext();
         RefreshCrosshairVisibility();
@@ -666,5 +668,14 @@ public class PlayerCombatController : MonoBehaviour
             ApplyUpperBodyLayerWeight(upperBodyWeightAiming);
         else
             ApplyUpperBodyLayerWeight(upperBodyWeightEquipped);
+    }
+
+    public float GetCurrentWeaponAimMaxDistance(float fallback)
+    {
+        if (currentWeapon == null || currentWeapon.Data == null)
+            return Mathf.Max(0.1f, fallback);
+        
+        float effective = Mathf.Max(currentWeapon.Data.EffectiveRange, 10f);
+        return effective * 5f;
     }
 }

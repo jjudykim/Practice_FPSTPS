@@ -16,7 +16,7 @@ public class ProgressViewModel<T> : IDisposable where T : struct
             float fCur = toFloat(current.Value);
             float fMax = toFloat(this.max.Value);
 
-            float ratio = (fMax <= 0f) ? 00f : fCur / fMax;
+            float ratio = (fMax <= 0f) ? 0f : fCur / fMax;
             return ratio;
         }
     }

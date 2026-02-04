@@ -26,7 +26,7 @@ public class CameraController : MonoBehaviour
     [Header("Cursor")]
     [SerializeField] private Texture2D normalCursor;
     
-    [Header("Smooting")]
+    [Header("Smoothing")]
     [SerializeField] private float positionSmooth = 18f;
     
     [Header("First Person Settings")]
