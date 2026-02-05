@@ -36,6 +36,7 @@ public class WeaponBase : MonoBehaviour, IWeapon
 
     public GameObject Model => model;
     public WeaponData Data => data;
+    public BulletData Bullet => bullet;
 
     public bool IsReloading => isReloading;
     public int CurrentAmmo => ammo.Value;
@@ -73,6 +74,8 @@ public class WeaponBase : MonoBehaviour, IWeapon
             data.ValidateAndClamp();
             ammo.Value = data.MagazineSize;
         }
+        
+        EnsureDefaultBulletIfNeeded();
 
         isReloading = false;
         nextFireTime = 0f;
@@ -96,6 +99,26 @@ public class WeaponBase : MonoBehaviour, IWeapon
         int clamped = Mathf.Clamp(newAmmo, 0, data.MagazineSize);
         Ammo.Value = clamped;
     }
+
+    private void EnsureDefaultBulletIfNeeded()
+    {
+        if (bullet != null)
+            return;
+
+        if (data == null)
+            return;
+
+        if (data.Caliber == Caliber.None)
+            return;
+
+        if (Databases.Instance != null
+            && Databases.Instance.Bullet != null
+            && Databases.Instance.Bullet.TryGetDefault(data.Caliber, out BulletData defaultBullet))
+        {
+            SetBullet(defaultBullet);
+        }
+    }
+
 
     public void SetBullet(BulletData bulletData)
     {
@@ -121,7 +144,7 @@ public class WeaponBase : MonoBehaviour, IWeapon
     {
         TryFire();
     }
-
+    
     public void TriggerHold()
     {
         if (data.isAutomatic == false)

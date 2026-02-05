@@ -25,6 +25,9 @@ public class MinimapCameraFollow : MonoBehaviour
             cam.orthographic = true;
             cam.orthographicSize = orthoSize;
         }
+        
+        if (target == null)
+            target = Player.Instance.transform;
     }
 
     private void LateUpdate()

@@ -46,13 +46,21 @@ public class PlayerMoveController : MonoBehaviour
         
         input = Managers.Instance.Input;
         cam = Camera.main;
-        
-        if (cameraController == null)
-            cameraController = Camera.main.GetComponent<CameraController>();
+        cameraController = Camera.main.GetComponent<CameraController>();
     }
 
     void Update()
     {
+        if (DialogManager.Instance != null && DialogManager.Instance.IsOpen)
+        {
+            animator.SetFloat(INPUT_X, 0f);
+            animator.SetFloat(INPUT_Y, 0f);
+            animator.SetFloat(SPEED, 0f);
+            IsRunning = false;
+            Player.Instance.IsRunning = false;
+            return;
+        }
+
         if (runLockTimer > 0f)
             runLockTimer -= Time.deltaTime;
         

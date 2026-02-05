@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-public class CameraController : MonoBehaviour
+public class CameraController : SingletonBase<CameraController>
 {
     public enum CameraMode
     {
@@ -48,8 +48,10 @@ public class CameraController : MonoBehaviour
     private bool isAiming = false;
     private bool hideCursorInQuarterView = false;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+        
         cam = Camera.main;
         currentMode = startMode;
         
@@ -67,6 +69,9 @@ public class CameraController : MonoBehaviour
         if (Managers.Instance.Input.ViewChange && IsDialogOpen() == false)
             ToggleMode();
 
+        if (IsDialogOpen())
+            return;
+        
         switch (currentMode)
         {
             case CameraMode.FirstPerson:
@@ -77,7 +82,18 @@ public class CameraController : MonoBehaviour
                 break;
         }
     }
-    
+
+    public void SetMode(CameraMode mode)
+    {
+        currentMode = mode;
+        ApplyModeImmediate(currentMode);
+
+        if (currentMode == CameraMode.FirstPerson)
+            isAiming = false;
+        
+        OnModeChanged?.Invoke(currentMode);
+    }
+
     private bool IsDialogOpen()
     {
         return (DialogManager.Instance != null && DialogManager.Instance.IsOpen);
@@ -177,7 +193,13 @@ public class CameraController : MonoBehaviour
                 Cursor.SetCursor(normalCursor, new Vector2(0, 0), CursorMode.Auto);
         }
     }
-    
+
+    public void ApplyCurModeImmediate()
+    {
+        ApplyModeImmediate(currentMode);
+    }
+
+
     public bool TryGetMouseWorldPointOnPlane(float planeY, out Vector3 worldPoint)
     {
         worldPoint = default;

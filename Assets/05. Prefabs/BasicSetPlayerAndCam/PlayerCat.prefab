@@ -35,6 +35,7 @@ Transform:
   - {fileID: 4211033371250251260}
   - {fileID: 8182064045744544368}
   - {fileID: 8051374810063935306}
+  - {fileID: 5129875920666442208}
   - {fileID: 8370637376773897078}
   m_Father: {fileID: 7760366265928939363}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -758,8 +759,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e62c4f337afd9094688a55d8d1cc3cd1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponRoot
-  defaultWeaponPrefab: {fileID: 5695195590120675783, guid: 4dd49d064a5afe843a32d2d6fc16e4d7, type: 3}
-  equipDefaultOnStart: 0
 --- !u!1 &1106254521029440245
 GameObject:
   m_ObjectHideFlags: 0
@@ -2479,8 +2478,8 @@ GameObject:
   - component: {fileID: 636662725374839857}
   - component: {fileID: 2968167878872338190}
   - component: {fileID: 1435781796485809252}
-  - component: {fileID: 8586566843642586295}
   - component: {fileID: 1347310328027206966}
+  - component: {fileID: 8586566843642586295}
   m_Layer: 0
   m_Name: PlayerCat
   m_TagString: Untagged
@@ -2581,9 +2580,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62c63c4b70eba364fb7b0b816d34ff8a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCombatController
+  inventory: {fileID: 5003049107955434694}
+  prefabRegistry: {fileID: 11400000, guid: 6cbc811eb6d02d046a897ba85ffc896d, type: 2}
+  currentSlotIndex: 0
   animator: {fileID: 7283539194459888359}
   weaponRoot: {fileID: 8330227432487102978}
-  weaponPrefabForTest: {fileID: 5695195590120675783, guid: 63fff6352e56a2c4b8b82195f5bf7588, type: 3}
   aimProviderSource: {fileID: 4866053981123575775}
   lookController: {fileID: 636662725374839857}
   moveController: {fileID: 7344804463398660623}
@@ -2601,7 +2602,9 @@ MonoBehaviour:
   upperBodyWeightAiming: 1
   upperBodyLayerName: UpperBody Layer
   crosshairUI: {fileID: 0}
-  magazineBinder: {fileID: 0}
+  magazineBinder: {fileID: 4132161677078534409}
+  worldUIRoot: {fileID: 7372660746370271910}
+  uiBinder: {fileID: 1094827320877801283}
 --- !u!136 &1435781796485809252
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -2625,22 +2628,6 @@ CapsuleCollider:
   m_Height: 1.6640612
   m_Direction: 1
   m_Center: {x: 0, y: 0.8742053, z: 0}
---- !u!114 &8586566843642586295
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5316852205667374452}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9eb4a6f4e75e4c22b31f5f3fec54aeaa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerDamageReceiver
-  player: {fileID: 3194077368604352890}
-  animator: {fileID: 7283539194459888359}
-  disableOnDeath: []
-  disableCollidersOnDeath: 1
 --- !u!114 &1347310328027206966
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2656,6 +2643,24 @@ MonoBehaviour:
   interactKey: 101
   promptUI: {fileID: 0}
   blockWhileDialogOpen: 1
+--- !u!114 &8586566843642586295
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5316852205667374452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9eb4a6f4e75e4c22b31f5f3fec54aeaa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerDamageReceiver
+  player: {fileID: 3194077368604352890}
+  animator: {fileID: 7283539194459888359}
+  disableOnDeath:
+  - {fileID: 8330227432487102978}
+  - {fileID: 8330227432487102978}
+  disableCollidersOnDeath: 1
 --- !u!1 &5408693563166511687
 GameObject:
   m_ObjectHideFlags: 0
@@ -2720,6 +2725,53 @@ Transform:
   - {fileID: 2977590150077436330}
   m_Father: {fileID: 3559512835459449300}
   m_LocalEulerAnglesHint: {x: 74.1067, y: -28.14537, z: 53.585445}
+--- !u!1 &5478440200120334198
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5129875920666442208}
+  - component: {fileID: 5003049107955434694}
+  m_Layer: 0
+  m_Name: WeaponInventory
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5129875920666442208
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5478440200120334198}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5236409335639492119}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5003049107955434694
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5478440200120334198}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d55043472a8648aeb6dcc6186a8b7759, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerWeaponInventory
+  weaponIds:
+  - AR_12_Viper
+  - SR_77_Lynx
 --- !u!1 &5528647420831479473
 GameObject:
   m_ObjectHideFlags: 0
@@ -4475,6 +4527,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: AimProviderRouter
       objectReference: {fileID: 0}
+    - target: {fileID: 105424273317502843, guid: a93a549ee9e6c5a43abe13be7f25c654, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 435823029952776219, guid: a93a549ee9e6c5a43abe13be7f25c654, type: 3}
       propertyPath: m_LocalPosition.x
       value: 851.57526
@@ -4521,6 +4577,14 @@ PrefabInstance:
       objectReference: {fileID: 1648484692043344615}
     - target: {fileID: 2328422994756623318, guid: a93a549ee9e6c5a43abe13be7f25c654, type: 3}
       propertyPath: quarterViewProviderSource
+      value: 
+      objectReference: {fileID: 7686175605264752718}
+    - target: {fileID: 2328422994756623318, guid: a93a549ee9e6c5a43abe13be7f25c654, type: 3}
+      propertyPath: firstPersonProviderBehaviour
+      value: 
+      objectReference: {fileID: 1648484692043344615}
+    - target: {fileID: 2328422994756623318, guid: a93a549ee9e6c5a43abe13be7f25c654, type: 3}
+      propertyPath: quarterViewProviderBehaviour
       value: 
       objectReference: {fileID: 7686175605264752718}
     m_RemovedComponents: []

@@ -921,10 +921,10 @@ MonoBehaviour:
   target: {fileID: 0}
   agent: {fileID: 7944483825583579777}
   animator: {fileID: 904540327985459509}
-  maxHp: 30
-  curHp: 30
-  patrolRadius: 5
-  detectRange: 15
+  maxHp: 200
+  curHp: 200
+  patrolRadius: 15
+  detectRange: 20
   attackRange: 2.2
   attackDamage: 10
   attackCooldown: 5
@@ -954,8 +954,8 @@ NavMeshAgent:
   m_Enabled: 1
   m_AgentTypeID: 0
   m_Radius: 0.5
-  m_Speed: 1.5
-  m_Acceleration: 5
+  m_Speed: 4
+  m_Acceleration: 8
   avoidancePriority: 50
   m_AngularSpeed: 120
   m_StoppingDistance: 0

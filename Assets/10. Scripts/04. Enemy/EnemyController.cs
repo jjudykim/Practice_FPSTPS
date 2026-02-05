@@ -110,7 +110,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     //        Animator Param Hash
     // =================================
     private static readonly int ANIM_SPEED  = Animator.StringToHash("Speed");
-    private static readonly int ANIM_CHASE  = Animator.StringToHash("Chase");
+    private static readonly int ANIM_IS_CHASING  = Animator.StringToHash("IsChasing");
     private static readonly int ANIM_ATTACK = Animator.StringToHash("Attack");
     private static readonly int ANIM_DAMAGE   = Animator.StringToHash("Damage");
     private static readonly int ANIM_DEAD   = Animator.StringToHash("Dead");
@@ -165,26 +165,23 @@ public class EnemyController : MonoBehaviour, IDamageable
     {
         float dt = Time.deltaTime;
 
-        UpdateAnimatorSpeed(dt);
-        
         if (IsDead)
         {
             if (fsm.CurrentState != stateDead)
                 fsm.ChangeState(stateDead);
-
+            
             fsm.Tick(dt);
             return;
         }
 
-        if (attackTimer > 0f)
-            attackTimer -= dt;
-
+        UpdateAnimatorSpeed(dt);
+        
         fsm.Tick(dt);
     }
 
     private void UpdateAnimatorSpeed(float dt)
     {
-        if (animator == null)
+        if (animator == null || IsDead)
             return;
 
         float speed01 = 0f;
@@ -215,13 +212,12 @@ public class EnemyController : MonoBehaviour, IDamageable
     // ==============================
     //       Animator Wrapper
     // ==============================
-    public void AnimTriggerChase()
+    public void SetAnimChasing(bool isChasing)
     {
         if (animator == null)
             return;
         
-        animator.ResetTrigger(ANIM_CHASE);
-        animator.SetTrigger(ANIM_CHASE);
+        animator.SetBool(ANIM_IS_CHASING, isChasing);
     }
 
     public void AnimTriggerAttack()
@@ -587,7 +583,6 @@ public class EnemyController : MonoBehaviour, IDamageable
         }
         else
         {
-            AnimTriggerDamage();
             ToHit();
         }
     }

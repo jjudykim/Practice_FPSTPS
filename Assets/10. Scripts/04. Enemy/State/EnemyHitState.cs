@@ -22,8 +22,6 @@ public class EnemyHitState : IEnemyState
         owner.AnimTriggerDamage();
         owner.SetChaseSpeed(false);
         hitTimer = HIT_MIN_DURATION;
-        
-        Debug.Log("[Enemy] ::: Enter Hit");
     }
 
     public void Tick(float dt)
@@ -65,6 +63,5 @@ public class EnemyHitState : IEnemyState
     public void Exit()
     {
         owner.ResumeMove();
-        Debug.Log("[Enemy] ::: Exit Hit");
     }
 }

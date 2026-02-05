@@ -13,27 +13,65 @@ public class PlayerUIModeSwitcher : MonoBehaviour
     [SerializeField] private WorldUI[] worldUIComponents; // worldUIRoot 아래의 WorldUI들(선택)
 
     [Header("Options")]
-    [SerializeField] private bool applyImmediatelyOnStart = true;
-
-    private void Awake()
-    {
-        if (cameraController == null)
-            cameraController = FindObjectOfType<CameraController>();
-    }
-
+    [SerializeField] private bool applyImmediatelyOnEnable = true;
+    
     private void OnEnable()
     {
+        EnsureCameraController();
+
         if (cameraController != null)
+        {
             cameraController.OnModeChanged += HandleModeChanged;
 
-        if (applyImmediatelyOnStart && cameraController != null)
-            HandleModeChanged(cameraController.Mode);
+            if (applyImmediatelyOnEnable)
+            {
+                HandleModeChanged(cameraController.Mode);
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerUIModeSwitcher] ::: CameraController를 찾을 수 없음");
+        }
     }
 
     private void OnDisable()
     {
         if (cameraController != null)
             cameraController.OnModeChanged -= HandleModeChanged;
+    }
+
+    public void SetWorldUIRoot(GameObject worldUI)
+    {
+        worldUIRoot = worldUI;
+    }
+
+    private void EnsureCameraController()
+    {
+        if (cameraController == null)
+        {
+            cameraController = CameraController.Instance;
+
+            if (cameraController == null)
+            {
+                var mainCam = Camera.main;
+                if (mainCam != null)
+                {
+                    cameraController = mainCam.GetComponent<CameraController>();
+                }
+
+                if (cameraController == null)
+                {
+                    cameraController = FindObjectOfType<CameraController>();
+                }
+            }
+        }
+    }
+
+    public void SetUp(CameraController controller)
+    {
+        cameraController = controller;
+        if (cameraController != null)
+                HandleModeChanged(cameraController.Mode);
     }
 
     private void HandleModeChanged(CameraController.CameraMode mode)
@@ -48,17 +86,13 @@ public class PlayerUIModeSwitcher : MonoBehaviour
 
         if (hudUIRoot != null)
             hudUIRoot.SetActive(isFirst);
-        
-        if (worldUIComponents != null && worldUIComponents.Length > 0)
+
+        if (worldUIComponents != null)
         {
-            Camera cam = Camera.main;
-            if (cam != null)
+            for (int i = 0; i < worldUIComponents.Length; i++)
             {
-                for (int i = 0; i < worldUIComponents.Length; i++)
-                {
-                    if (worldUIComponents[i] != null)
-                        worldUIComponents[i].ForceUpdateNow();
-                }
+                if (worldUIComponents[i] != null)
+                    worldUIComponents[i].ForceUpdateNow();
             }
         }
     }

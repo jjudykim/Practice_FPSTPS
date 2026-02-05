@@ -15,9 +15,9 @@ public class EnemyChaseState : IEnemyState
     {
         owner.SetLock(false);
         owner.ResumeMove();
-
         owner.SetChaseSpeed(true);
-        owner.AnimTriggerChase();
+        
+        owner.SetAnimChasing(true);
 
         repathTimer = 0f;
     }
@@ -55,5 +55,6 @@ public class EnemyChaseState : IEnemyState
     public void Exit()
     {
         owner.SetChaseSpeed(false);
+        owner.SetAnimChasing(false);
     }
 }

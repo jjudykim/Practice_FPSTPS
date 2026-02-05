@@ -67,11 +67,11 @@ RectTransform:
   - {fileID: 656924855838653842}
   m_Father: {fileID: 3589929369921189348}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.5, y: 1}
+  m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1520, y: 300}
-  m_Pivot: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &3949526885687411306
 GameObject:
   m_ObjectHideFlags: 0
@@ -138,11 +138,11 @@ RectTransform:
   - {fileID: 4848714162389576713}
   m_Father: {fileID: 1693150113222134526}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 0}
+  m_AnchorMin: {x: 0.5, y: 1}
+  m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 300}
-  m_Pivot: {x: 0, y: 0}
+  m_SizeDelta: {x: 1520, y: 300}
+  m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &7298049108684768339
 GameObject:
   m_ObjectHideFlags: 0
@@ -242,8 +242,8 @@ MonoBehaviour:
   nodePrefab: {fileID: 4197415479059323652, guid: 0c0553566a9d68a4d9637cec34918475, type: 3}
   scrollRect: {fileID: 8040130286857666271}
   content: {fileID: 3589929369921189348}
-  contentPaddingY: 500
-  contentPaddingX: 0
+  contentPaddingY: 300
+  contentPaddingX: 300
   primarySpacing: 300
   secondarySpacing: 600
   allowBacktracking: 1

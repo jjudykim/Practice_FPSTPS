@@ -42,6 +42,9 @@ public class PlayerLookController : MonoBehaviour
         if (playerRoot == null)
             playerRoot = transform;
         
+        if (cameraController == null)
+            cameraController = Camera.main.GetComponent<CameraController>();
+        
         input = Managers.Instance.Input;
         
         baseYaw = playerRoot.eulerAngles.y;
@@ -65,7 +68,10 @@ public class PlayerLookController : MonoBehaviour
     private void OnEnable()
     {
         if (DialogManager.Instance != null)
+        {
             DialogManager.Instance.OnDialogOpenChanged += HandleDialogOpenChanged;
+            lookEnabled = !DialogManager.Instance.IsOpen;
+        }
     }
     
     private void OnDisable()
@@ -74,11 +80,7 @@ public class PlayerLookController : MonoBehaviour
             DialogManager.Instance.OnDialogOpenChanged -= HandleDialogOpenChanged;
     }
     
-    private void HandleDialogOpenChanged(bool isOpen)
-    {
-        // Dialog 열리면 Look 차단, 닫히면 재개
-        lookEnabled = !isOpen;
-    }
+    private void HandleDialogOpenChanged(bool isOpen) => lookEnabled = !isOpen;
 
     private void Update()
     {
@@ -93,7 +95,7 @@ public class PlayerLookController : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (cameraController == null || playerRoot == null)
+        if (cameraController == null || playerRoot == null || !lookEnabled)
             return;
 
         switch (cameraController.Mode)
@@ -110,7 +112,7 @@ public class PlayerLookController : MonoBehaviour
 
     private void TickInput()
     {
-        if (input == null)
+        if (input == null || lookEnabled == false)
             return;
 
         float mouseX = input.POVX;

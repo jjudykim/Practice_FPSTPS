@@ -8,7 +8,7 @@ public class Managers : SingletonBase<Managers>
     public SaveDataManager SaveData { get; private set; }
 
     public CombatManager Combat { get; private set; }
-
+    protected override bool AllowAutoCreate => true;
     protected override void OnInitialize()
     {
         base.OnInitialize();

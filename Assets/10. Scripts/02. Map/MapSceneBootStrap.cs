@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class MapSceneBootstrapper : MonoBehaviour
 {
@@ -13,9 +14,34 @@ public class MapSceneBootstrapper : MonoBehaviour
     [Header("Entry Options")]
     [SerializeField] private bool openUIOnEnter = true;
     [SerializeField] private bool applyProgressOnOpen = true;
+    
+    [Header("Cursor Reset Policy")]
+    [SerializeField] private bool resetCursorOnEnter = true;
+
+    [Tooltip("MapScene에서는 커서를 보이게 할지")]
+    [SerializeField] private bool cursorVisible = true;
+
+    [Tooltip("MapScene에서는 커서를 잠금 해제할지")]
+    [SerializeField] private CursorLockMode lockMode = CursorLockMode.None;
+
+    [Header("Optional Cursor Texture")]
+    [SerializeField] private bool applyCursorTexture = false;
+    [SerializeField] private Texture2D cursorTexture;
+    [SerializeField] private Vector2 cursorHotspot = Vector2.zero;
+    [SerializeField] private CursorMode cursorMode = CursorMode.Auto;
 
     private MapPresetRepository repo;
-    
+
+    private void OnEnable()
+    {
+        if (resetCursorOnEnter)
+            ResetCursorState();
+
+        // UI 포커스 꼬임 방지(선택)
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(null);
+    }
+
     private void Awake()
     {
         if (mapSystem == null)
@@ -116,6 +142,18 @@ public class MapSceneBootstrapper : MonoBehaviour
 
         if (applyProgressOnOpen)
             mapUI.ApplyProgress(cache, MapUIController.MapUIMode.Interactive);
+        
+        int nodeToSnap = cache.CurrentNodeId;
+
+        if (cache.CurrentNodeId < 0 && cache.CurrentGraph != null)
+        {
+            nodeToSnap = cache.CurrentGraph.StartNode.Id;
+        }
+       
+        if (cache.CurrentNodeId >= 0)
+        {
+            mapUI.SnapToNode(cache.CurrentNodeId);
+        }
 
         Debug.Log($"[MapSceneBootstrapper] ::: Opened UI from cache. seed={cache.CurrentSeed}, current={cache.CurrentNodeId}, cleared={cache.ClearedNodeIds.Count}");
         return true;
@@ -134,5 +172,19 @@ public class MapSceneBootstrapper : MonoBehaviour
         
         mapSystem.Build(data.MapId, data.UsedSeed);
         return true;
+    }
+    
+    private void ResetCursorState()
+    {
+        Cursor.lockState = lockMode;
+        Cursor.visible = cursorVisible;
+
+        if (applyCursorTexture)
+        {
+            // cursorTexture가 null이면 기본 커서로
+            Cursor.SetCursor(cursorTexture, cursorHotspot, cursorMode);
+        }
+
+        Debug.Log($"[MapSceneBootStrap] Cursor Reset -> lockState={Cursor.lockState}, visible={Cursor.visible}");
     }
 }

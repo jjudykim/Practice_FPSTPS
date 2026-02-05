@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -8,6 +9,16 @@ public class WeaponDatabase : TSVDatabase<WeaponData, WeaponTsvRow>
     public WeaponDatabase(string tableName = "Weapon", bool logOnLoad = true) 
         : base(tableName, logOnLoad, StringComparer.OrdinalIgnoreCase)
     {
+    }
+    
+    public WeaponData GetData(string id)
+    {
+        return GetOrNull(id);
+    }
+    
+    public bool TryGetData(string id, out WeaponData data)
+    {
+        return TryGet(id, out data);
     }
     
     protected override WeaponData ConvertRowToData(WeaponTsvRow row, int rowIndex)

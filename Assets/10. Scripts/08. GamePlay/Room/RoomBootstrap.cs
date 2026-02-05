@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class RoomBootstrapper : MonoBehaviour
+public class RoomBootstrap : MonoBehaviour
 {
     [SerializeField] private RoomControllerBase roomController;
 

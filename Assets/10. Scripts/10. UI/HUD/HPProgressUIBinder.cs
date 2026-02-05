@@ -13,8 +13,16 @@ public class HPProgressUIBinder : MonoBehaviour
     [SerializeField] private bool forceOverrideEveryFrame = true;  
 
     private ProgressViewModel<int> hpVM;
+    private bool isInitialized = false;
+    
     private float targetPercent;     // 0~100
     private float displayedPercent;
+
+    public void SetHPBar(ProgressBar hpBar)
+    {
+        this.hpBar = hpBar;
+        TryInitialize();
+    }
 
     private void Awake()
     {
@@ -27,27 +35,44 @@ public class HPProgressUIBinder : MonoBehaviour
 
     private void OnEnable()
     {
-        if (player == null || hpBar == null)
-        {
-            Debug.LogWarning("[HUD_HPProgressBinder] Missing references. player or hpBar is null.");
+        TryInitialize();
+    }
+
+    private void TryInitialize()
+    {
+        if (isInitialized)
             return;
-        }
-        LockProgressBarAsRenderer();
         
+        // 1. 플레이어 참조 확인 (DDOL 대응)
+        if (player == null)
+            player = Player.Instance;
+
+        // 2. 두 참조가 모두 있어야 초기화 가능
+        if (player == null || hpBar == null)
+            return;
+        
+        LockProgressBarAsRenderer();
+
+        if (hpVM != null)
+            hpVM.Dispose();
+
         hpVM = new ProgressViewModel<int>(
             player.Stats.Resources.CurHp,
             player.Stats.MaxHpObs,
             v => v
         );
-
+        
         hpVM.OnRatioChanged += OnHpRatioChanged;
-
-        // 초기 동기화
+        
         targetPercent = Mathf.Clamp(hpVM.Ratio * 100f, 0f, 100f);
         displayedPercent = targetPercent;
         hpBar.currentPercent = displayedPercent;
+        hpBar.UpdateUI(); // Modern UI Pack 강제 갱신
+        
+        isInitialized = true;
+        Debug.Log("[HPProgressUIBinder] ::: HP 바 바인딩 성공");
     }
-    
+
     private void OnDisable()
     {
         if (hpVM != null)
@@ -56,6 +81,8 @@ public class HPProgressUIBinder : MonoBehaviour
             hpVM.Dispose();
             hpVM = null;
         }
+
+        isInitialized = false;
     }
     
     private void LockProgressBarAsRenderer()

@@ -34,7 +34,13 @@ public class DialogManager : MonoBehaviour
 
         Instance = this;
     }
-    
+
+    private void OnDestroy()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
     public void Open(NpcDialogInteractable npc, string startNodeId)
     {
         if (IsOpen)

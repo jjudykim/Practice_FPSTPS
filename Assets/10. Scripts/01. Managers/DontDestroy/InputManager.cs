@@ -13,8 +13,8 @@ public class InputManager
     // Run (지속 입력)
     public bool Run { get; private set; }
     
-    // Equip/UnEquip (원샷 입력)
-    public bool OnWeapon { get; private set; }
+    // UnEquip (원샷 입력)
+    public bool OffWeapon { get; private set; }
 
     // Roll (원샷 입력)
     public bool Roll { get; private set; }
@@ -26,7 +26,7 @@ public class InputManager
     public bool ViewChange { get; private set; }
     
     // Map Toggle (원샷 입력)
-    public bool MiniMap { get; private set; }
+    public bool SessionMap { get; private set; }
     
     // Inventory Toggle (원샷 입력)
     public bool Inventory { get; private set; }
@@ -69,7 +69,7 @@ public class InputManager
             
             Run = Input.GetKey(KeyCode.LeftShift);
             Roll = Input.GetKeyDown(KeyCode.Space);
-            OnWeapon = Input.GetKeyDown(KeyCode.F);
+            OffWeapon = Input.GetKeyDown(KeyCode.F);
             Reload = Input.GetKeyDown(KeyCode.R);
             FireDown = Input.GetMouseButtonDown(0);
             Fire = Input.GetMouseButton(0);
@@ -100,7 +100,7 @@ public class InputManager
         // UI Inputs
         if (UIInputEnabled)
         {
-            MiniMap = Input.GetKeyDown(KeyCode.M);
+            SessionMap = Input.GetKeyDown(KeyCode.M);
             Inventory = Input.GetKeyDown(KeyCode.I);
         }
     }
@@ -111,7 +111,7 @@ public class InputManager
         Reload = false;
 
         ViewChange = false;
-        MiniMap = false;
+        SessionMap = false;
         Inventory = false;
 
         QuickSlot1 = false;

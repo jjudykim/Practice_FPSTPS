@@ -6,7 +6,7 @@ public class CombatRoomController : RoomControllerBase
     [Header("Room Points")]
     [SerializeField] private Transform entryPoint;
     [SerializeField] private EndPointTrigger endPoint;
-
+ 
     [Header("Enemy Spawn Points (pre-placed in scene)")]
     [SerializeField] private List<Transform> enemySpawnPoints = new List<Transform>();
 
@@ -20,6 +20,18 @@ public class CombatRoomController : RoomControllerBase
     private int aliveEnemyCount = 0;
     private int killCount = 0;
     private float elapsed = 0f;
+
+    private void Awake()
+    {
+        if (Player.Instance != null)
+        {
+            var combat = Player.Instance.GetComponent<PlayerCombatController>();
+            if (combat != null)
+            {
+                combat.InitializeCombatState();
+            }
+        }
+    }
 
     public override void Init(int nodeId)
     {
@@ -38,12 +50,35 @@ public class CombatRoomController : RoomControllerBase
 
         // 3) EndPoint 비활성으로 시작
         SetEndPointActive(false);
+        
+        // 4) 카메라 모드 쿼터뷰로 기본 설정
+        CameraController.Instance.SetMode(CameraController.CameraMode.QuarterView);
+
+        if (Player.Instance != null)
+        {
+            var combat = Player.Instance.GetComponent<PlayerCombatController>();
+            if (combat != null)
+            {
+                combat.InitializeCombatState();
+            }
+        }
 
         Debug.Log($"[CombatRoomController] Init completed. nodeId={NodeId}, enemyCount={aliveEnemyCount}");
     }
-    
-    private void Update()
+
+    private void Start()
     {
+        if (Player.Instance != null)
+        {
+            var combat = Player.Instance.GetComponent<PlayerCombatController>();
+            if (combat != null)
+                combat.InitializeCombatState();
+        }
+    }
+
+    protected override void Update()
+    {
+        base.Update();
         if (isFinished)
             return;
 

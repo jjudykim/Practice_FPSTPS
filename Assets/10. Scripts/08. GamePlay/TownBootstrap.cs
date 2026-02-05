@@ -51,6 +51,11 @@ public class TownBootstrap : MonoBehaviour
         RestoreRules();
     }
 
+    private async void Start()
+    {
+        await Databases.Instance.PreloadAllAsync();
+    }
+
     /// <summary>
     /// Town 씬 규칙 적용
     /// </summary>
