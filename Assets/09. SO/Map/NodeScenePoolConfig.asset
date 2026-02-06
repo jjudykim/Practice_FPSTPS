@@ -17,22 +17,23 @@ MonoBehaviour:
     sceneNames:
     - TestCombatScene1
     - TestCombatScene2
+    - TestCombatScene3
+    - TestCombatScene4
+    - TestCombatScene5
   - nodeType: 1
     sceneNames:
     - TestCombatScene1
     - TestCombatScene2
+    - TestCombatScene3
+    - TestCombatScene4
+    - TestCombatScene5
   - nodeType: 2
     sceneNames:
     - TestRewardScene1
-    - TestRewardScene2
-    - TestRewardScene3
   - nodeType: 3
     sceneNames:
     - TestShopScene1
-    - TestShopScene2
-    - TestShopScene3
   - nodeType: 4
     sceneNames:
     - TestBossScene1
     - TestBossScene2
-    - TestBossScene3
