@@ -75,6 +75,12 @@ public class MapSceneController : MonoBehaviour
 
         if (applyProgressOnOpen)
             mapUI.ApplyProgress(cache,  MapUIController.MapUIMode.Interactive);
+        
+        if (cache.CurrentNodeId < 0) 
+            cache.TrySetCurrentNodeToStartIfNeeded();
+        
+        if (cache.CurrentNodeId >= 0)
+            mapUI.SnapToNode(cache.CurrentNodeId);
 
         Debug.Log($"[MapSceneController] ::: Opened UI from existing cache. current={cache.CurrentNodeId}, cleared={cache.ClearedNodeIds.Count}");
         return true;
@@ -102,7 +108,14 @@ public class MapSceneController : MonoBehaviour
         mapUI.Open(ctx.Graph, false);
 
         if (applyProgressOnOpen)
-            mapUI.ApplyProgress(Managers.Instance.Game.MapCache,  MapUIController.MapUIMode.Interactive);
+        {
+            var cache = Managers.Instance.Game.MapCache;
+            mapUI.ApplyProgress(cache, MapUIController.MapUIMode.Interactive);
+            
+            if (cache.CurrentNodeId < 0) cache.TrySetCurrentNodeToStartIfNeeded();
+            if (cache.CurrentNodeId >= 0)
+                    mapUI.SnapToNode(cache.CurrentNodeId);
+        }
 
         Debug.Log($"[MapSceneController] ::: Build completed. Cached & UI opened. seed={ctx.UsedSeed}");
     }

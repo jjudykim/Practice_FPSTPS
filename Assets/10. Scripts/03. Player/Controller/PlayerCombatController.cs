@@ -18,16 +18,21 @@ public class PlayerCombatController : MonoBehaviour
     private static readonly int AIM_X = Animator.StringToHash("AimX");
     private static readonly int AIM_Y = Animator.StringToHash("AimY");
 
+    [Header("New Weapon System")]
+    [SerializeField] private PlayerWeaponInventory inventory;
+    [SerializeField] private WeaponPrefabRegistry prefabRegistry;
+    [SerializeField] private int currentSlotIndex = 0;
+    [SerializeField] private WeaponBase currentWeapon = null;
+    
     [Header("Refs")]
     [SerializeField] private Animator animator;
     [SerializeField] private WeaponRoot weaponRoot;
-    [SerializeField] private WeaponBase weaponPrefabForTest;
     [SerializeField] private MonoBehaviour aimProviderSource;
     [SerializeField] private PlayerLookController lookController;
     [SerializeField] private PlayerMoveController moveController;
     [SerializeField] private CameraController cameraController;
     [SerializeField] private AimLineController aimLineController;
-
+    
     [Header("QuarterView Aim Facing")]
     [SerializeField] private float quarterAimTurnSpeed = 18f;     // 회전 보간 속도
     [SerializeField] private float quarterAimMaxDistance = 200f;  // 조준점 레이 최대 거리
@@ -43,13 +48,19 @@ public class PlayerCombatController : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float upperBodyWeightAiming = 1.0f;
     [SerializeField] private string upperBodyLayerName = "UpperBody Layer";
 
-    [Header("UI")]
+    [Header("UI Bindings")]
     [SerializeField] private CrosshairUI crosshairUI;
     [SerializeField] private WeaponMagazineUIBinder magazineBinder;
-
-    private IAimProvider aimProvider;
-    private WeaponBase currentWeapon;
+    [SerializeField] private GameObject worldUIRoot;
+    [SerializeField] private GameObject uiBinder;
     
+    
+    private IAimProvider aimProvider;
+    
+    private WeaponContext weaponContext;
+    private InputManager input;
+    
+    // 무기별 잔여 탄약 저장소 (ID 기반)
     private readonly Dictionary<string, int> savedAmmoByWeaponKey = new Dictionary<string, int>();
     
     public ObservableValue<float> ReloadElapsedObs { get; } = new ObservableValue<float>(0f);
@@ -61,6 +72,7 @@ public class PlayerCombatController : MonoBehaviour
     private float reloadCompleteTime = 0f;
     private bool reloadCooldownActive = false;
 
+    // 상태 프로퍼티
     public bool IsWeaponEquipped { get; private set; }
     public bool IsAiming { get; private set; }
     public bool IsReloading { get; private set; }
@@ -76,24 +88,66 @@ public class PlayerCombatController : MonoBehaviour
     public bool CanAim => IsWeaponEquipped
                           && (IsBusyByRoll == false)
                           && (IsReloading == false);
-
-    private InputManager input;
+    
     private int upperBodyLayerIndex = -1;
+
+    public GameObject WorldUIRoot => worldUIRoot;
+    public GameObject UIBinder => uiBinder;
+
+    public void SetCrossHairUI(CrosshairUI ui)
+    {
+        crosshairUI = ui;
+    }
 
     // Quarter aim point cache
     private int cachedAimFrame = -1;
     private bool cachedHasAimPoint = false;
     private Vector3 cachedAimPoint = Vector3.zero;
-
+    
     private void OnEnable()
     {
         cameraController.OnModeChanged += HandleCameraModeChanged;
+        BindAimProviderSafe();
+        PushWeaponContext();
         RefreshCrosshairVisibility();
     }
 
     private void OnDisable()
     {
         cameraController.OnModeChanged -= HandleCameraModeChanged;
+    }
+
+    private void Start()
+    {
+        InitializeCombatState();
+    }
+
+    public void InitializeCombatState()
+    {
+        // 1. 물리적 무기 모델 제거
+        if (weaponRoot != null)
+            weaponRoot.Unequip();
+        
+        // 2. 참조 초기화
+        currentWeapon = null;
+        currentSlotIndex = -1;
+        IsWeaponEquipped = false;
+        IsAiming = false;
+        IsReloading = false;
+        
+        // 3. UI 및 애니메이터 동기화
+        if (magazineBinder != null)
+            magazineBinder.Unbind();
+        
+        RefreshAllStates();
+
+        if (animator != null)
+        {
+            animator.ResetTrigger(TRIGGER_FIRE);
+            animator.ResetTrigger(TRIGGER_RELOAD);
+            animator.ResetTrigger(TRIGGER_EQUIP);
+            animator.Rebind();
+        }
     }
 
     private void HandleCameraModeChanged(CameraController.CameraMode mode)
@@ -147,12 +201,6 @@ public class PlayerCombatController : MonoBehaviour
         PushWeaponContext();
     }
 
-    // TODO : 테스트용, 나중에 게임 매니저 붙이면 삭제
-    private async void Start()
-    {
-        await Databases.Instance.PreloadAllAsync();
-    }
-
     private void Update()
     {
         // ===========================
@@ -169,8 +217,13 @@ public class PlayerCombatController : MonoBehaviour
         // ===========================
         if (IsReloading == false)
         {
-            if (GetEquipToggleDown())
-                ToggleEquip();
+            if (input.QuickSlot1)
+                EquipSlot(0);
+            if (input.QuickSlot2)
+                EquipSlot(1);
+
+            if (input.OffWeapon)
+                UnEquipCurrent();
         }
         
         if (IsWeaponEquipped == false)
@@ -227,78 +280,109 @@ public class PlayerCombatController : MonoBehaviour
         ApplyAimDirectionParams();
     }
 
-    private void ToggleEquip()
+    private void EquipSlot(int slotIndex)
     {
-        IsWeaponEquipped = !IsWeaponEquipped;
+        string targetWeaponId = inventory.GetWeaponId(slotIndex);
+        if (string.IsNullOrEmpty(targetWeaponId))
+            return;
+        
+        if (IsWeaponEquipped && currentSlotIndex == slotIndex)
+        {
+            UnEquipCurrent();
+            return;
+        }
 
         if (IsWeaponEquipped)
         {
-            // =================================
-            // 1) Equip
-            // =================================
-            currentWeapon = weaponRoot.Equip(weaponPrefabForTest);
-            
-            if (currentWeapon == null)
-            {
-                IsWeaponEquipped = false;
-                Debug.LogError("[PlayerCombatCtrl] Equip failed. currentWeapon is null.");
-                ApplyAnimatorBools();
-                RefreshCrosshairVisibility();
-                RefreshRigWeights();
-                return;
-            }
-            
-            string key = GetWeaponKey(currentWeapon);
-            if (string.IsNullOrEmpty(key) == false 
-                && savedAmmoByWeaponKey.TryGetValue(key, out int savedAmmo))
-            {
-                currentWeapon.SetCurrentAmmo(savedAmmo);
-            }
+            SaveCurrentWeaponState();
+            UnbindWeaponEvents(currentWeapon);
+            magazineBinder.Unbind();
+        }
 
-            animator.SetTrigger(TRIGGER_EQUIP);
+        currentSlotIndex = slotIndex;
+        
+        // 데이터베이스 및 레지스트리에서 정보 획득
+        WeaponData wData = Databases.Instance.Weapon.GetData(targetWeaponId);
+        WeaponBase wPrefab = prefabRegistry.GetPrefab(targetWeaponId);
+
+        if (wData == null || wPrefab == null)
+        {
+            Debug.LogError($"[CombatCtrl] Failed to load weapon: {targetWeaponId}");
+            return;
+        }
+        Debug.Log($"<color=cyan>[CombatCtrl]</color> ::: Found WeaponData: <b>{wData.DisplayName}</b> (Caliber: {wData.Caliber})");
+        
+        BulletData bData = null;
+        if (Databases.Instance.Bullet.TryGetDefault(wData.Caliber, out var defaultBullet))
+            bData = defaultBullet;
+
+        // 무기 컨텍스트 준비
+        UpdateWeaponContext();
+        
+        // 무기 생성 및 초기화
+        currentWeapon = weaponRoot.Equip(wPrefab, wData, weaponContext);
+
+        if (currentWeapon != null)
+        {
+            IsWeaponEquipped = true;
+            currentWeapon.SetBullet(bData);
             
+            if (savedAmmoByWeaponKey.TryGetValue(targetWeaponId, out int savedAmmo))
+                currentWeapon.SetCurrentAmmo(savedAmmo);
+            
+            Debug.Log($"<color=white><b>[CombatCtrl] ::: SUCCESS!</b></color> Weapon '{wData.DisplayName}' equipped in Slot {slotIndex}.");
+            
+            animator.SetTrigger(TRIGGER_EQUIP);
             BindWeaponEvents(currentWeapon);
             magazineBinder.Bind(currentWeapon);
-            
-            ResetReloadUI();
+
+            RefreshAllStates();
         }
+    }
+
+    private void UnEquipCurrent()
+    {
+        if (currentWeapon == null)
+            return;
+
+        SaveCurrentWeaponState();
+        animator.SetTrigger(TRIGGER_UNEQUIP);
+        
+        UnbindWeaponEvents(currentWeapon);
+        magazineBinder.Unbind();
+        weaponRoot.Unequip();
+
+        currentWeapon = null;
+        IsWeaponEquipped = false;
+        
+        RefreshAllStates();
+    }
+
+    private void SaveCurrentWeaponState()
+    {
+        if (currentWeapon != null && currentWeapon.Data != null)
+        {
+            savedAmmoByWeaponKey[currentWeapon.Data.Id] = currentWeapon.CurrentAmmo;
+        }
+    }
+
+    private void UpdateWeaponContext()
+    {
+        if (weaponContext == null)
+            weaponContext = new WeaponContext(aimProvider, transform, IsAiming);
         else
         {
-            // =================================
-            // 2) Unequip
-            // =================================
-            WeaponBase prevWeapon = currentWeapon;
-            
-            if (prevWeapon != null)
-            {
-                string key = GetWeaponKey(prevWeapon);
-                if (string.IsNullOrEmpty(key) == false)
-                {
-                    savedAmmoByWeaponKey[key] = prevWeapon.CurrentAmmo;
-                }
-            }
-
-            if (IsAiming)
-                SetAiming(false);
-            
-            animator.SetTrigger(TRIGGER_UNEQUIP);
-            
-            magazineBinder.Unbind();
-            
-            UnbindWeaponEvents(currentWeapon);
-            
-            weaponRoot.Unequip();
-            currentWeapon = null;
-            
-            ResetReloadUI();
+            weaponContext.SetAimProvider(aimProvider);
+            weaponContext.SetIsAiming(IsAiming);
         }
+    }
 
+    private void RefreshAllStates()
+    {
         ApplyAnimatorBools();
         PushWeaponContext();
         RefreshCrosshairVisibility();
         RefreshRigWeights();
-
-        Debug.Log($"[PlayerCombatCtrl] ::: Equip = {IsWeaponEquipped}");
     }
 
     private void UpdateReloadProgress(float dt)
@@ -365,14 +449,6 @@ public class PlayerCombatController : MonoBehaviour
         ReloadElapsedObs.Value = 0f;
         reloadCompleted = false;
         reloadCooldownActive = false;
-    }
-
-    private string GetWeaponKey(WeaponBase weapon)
-    {
-        if (weapon == null || weapon.Data == null)
-            return string.Empty;
-
-        return weapon.Data.Id;
     }
 
     private void TickAim()
@@ -474,8 +550,16 @@ public class PlayerCombatController : MonoBehaviour
     {
         if (currentWeapon == null)
             return;
+        
+        BindAimProviderSafe();
+        if (aimProvider == null)
+            return;
 
-        currentWeapon.SetContext(new WeaponContext(aimProvider, transform, IsAiming));
+        weaponContext.SetAimProvider(aimProvider);
+        weaponContext.SetIsAiming(IsAiming);
+        
+        if (weaponRoot != null)
+            weaponRoot.PushContext(weaponContext);
 
         if (crosshairUI != null)
             crosshairUI.SetContext(currentWeapon.Data, IsAiming);
@@ -581,7 +665,7 @@ public class PlayerCombatController : MonoBehaviour
         animator.SetLayerWeight(upperBodyLayerIndex, w);
     }
 
-    private bool GetEquipToggleDown() => input.OnWeapon;
+    private bool GetEquipToggleDown() => input.OffWeapon;
     private bool GetReloadDown() => input.Reload;
 
     private bool GetAimHeld()
@@ -629,9 +713,9 @@ public class PlayerCombatController : MonoBehaviour
         if (crosshairUI == null)
             return;
 
-        bool visible = false;
-        bool followMouse = false;
-
+        bool isVisible = IsWeaponEquipped;
+        bool shouldFollowMouse = false;
+        
         if (cameraController != null)
         {
             // 1인칭: 무기 장착 시 CrosshairUI 표시 (중앙 고정)
@@ -640,20 +724,22 @@ public class PlayerCombatController : MonoBehaviour
             {
                 if (cameraController.Mode == CameraController.CameraMode.FirstPerson)
                 {
-                    visible = true;
-                    followMouse = false;
+                    shouldFollowMouse = false;
                 }
                 else if (cameraController.Mode == CameraController.CameraMode.QuarterView)
                 {
-                    visible = true;
-                    followMouse = true;
+                    shouldFollowMouse = true;
                 }
             }
-            cameraController.SetQuarterViewCursorHidden(IsWeaponEquipped);
+            cameraController.SetQuarterViewCursorHidden(isVisible  && cameraController.Mode == CameraController.CameraMode.QuarterView); 
         }
+        crosshairUI.gameObject.SetActive(isVisible);
+        crosshairUI.SetFollowMouse(shouldFollowMouse);
 
-        crosshairUI.gameObject.SetActive(visible);
-        crosshairUI.SetFollowMouse(followMouse);
+        if (isVisible && currentWeapon != null)
+        {
+            crosshairUI.SetContext(currentWeapon.Data, IsAiming);
+        }
     }
 
     private void RefreshRigWeights()
@@ -677,5 +763,17 @@ public class PlayerCombatController : MonoBehaviour
         
         float effective = Mathf.Max(currentWeapon.Data.EffectiveRange, 10f);
         return effective * 5f;
+    }
+    
+    private void BindAimProviderSafe()
+    {
+        if (aimProviderSource != null && aimProviderSource is IAimProvider p)
+            aimProvider = p;
+        
+        if (aimProvider == null)
+            aimProvider = GetComponentInChildren<IAimProvider>(true);
+
+        if (aimProvider == null)
+            Debug.LogError("[PlayerCombatCtrl] BindAimProviderSafe failed: IAimProvider not found.");
     }
 }

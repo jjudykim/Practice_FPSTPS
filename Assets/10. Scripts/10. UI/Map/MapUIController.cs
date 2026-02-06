@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEditor.TerrainTools;
 using UnityEngine;
@@ -84,30 +85,20 @@ public class MapUIController :  MonoBehaviour
 
     public void Open(MapGraph graph, bool viewOnly)
     {
-        if (graph == null)
-        {
-            Debug.LogError("[MapUIController] ::: graph is null");
+        if (graph == null || panelRoot == null)
             return;
-        }
-
-        if (panelRoot == null)
-        {
-            Debug.LogError("[MapUIController] panelRoot is null");
-            return;
-        }
         
         currentMode = viewOnly ? MapUIMode.ViewOnly : MapUIMode.Interactive;
-        
-        panelRoot.SetActive(true);
+        panelRoot.SetActive(true);       
+ 
         ClearUI();
         ClearCaches();
         
+        // 1. 노드 데이터 캐싱
         for (int i = 0; i < graph.Nodes.Count; ++i)
-        {
-            MapNode n = graph.Nodes[i];
-            nodesById[n.Id] = n;
-        }
+            nodesById[graph.Nodes[i].Id] = graph.Nodes[i];
 
+        // 2. 레이아웃 계산
         var settings = new MapGraphLayout.LayoutSettings(primarySpacing
                                                        , secondarySpacing
                                                        , new Vector2(contentPaddingX, contentPaddingY)
@@ -115,10 +106,34 @@ public class MapUIController :  MonoBehaviour
         
         Dictionary<int, Vector2> positions = MapGraphLayout.BuildNodePositions(graph, settings);
 
-        ResizeContentToFit(positions);
+        // 3. 그래프 경계 계산
+        float minX = float.PositiveInfinity;
+        float maxX = float.NegativeInfinity;
+        float minY = float.PositiveInfinity;
+        float maxY = float.NegativeInfinity;
+        foreach (var p in positions.Values)
+        {
+            minX = Mathf.Min(minX, p.x); 
+            maxX = Mathf.Max(maxX, p.x);
+            minY = Mathf.Min(minY, p.y);
+            maxY = Mathf.Max(maxY, p.y);
+        }
+        
+        // 4. 컨텐츠 크기 결정
+        float graphWidth = maxX - minX;
+        float graphHeight = maxY - minY;
+        float finalWidth = Mathf.Max(graphWidth + contentPaddingX * 2f, scrollRect.viewport.rect.width);
+        float finalHeight = graphHeight + contentPaddingY * 2f;
+
+        content.sizeDelta = new Vector2(finalWidth, finalHeight);
+        
+        // 5. 오프셋 계산
+        float offsetX = -(minX + maxX) / 2f;
+        float offsetY = (-finalHeight / 2f + contentPaddingY) - minY;
+        Vector2 totalOffset = new Vector2(offsetX, offsetY);
         BuildNeighbors(graph);
         
-        // 노드 생성
+        // 노드 생성 및 배치
         foreach (var node in graph.Nodes)
         {
             if (positions.TryGetValue(node.Id, out Vector2 pos) == false)
@@ -129,47 +144,52 @@ public class MapUIController :  MonoBehaviour
             nodeViewsById[node.Id] = view;
 
             RectTransform rt = view.GetComponent<RectTransform>();
-            rt.anchoredPosition = pos;
+            rt.anchoredPosition = pos + totalOffset;
 
-            if (viewOnly == false)
-            {
-                view.Bind(node, HandleNodeClicked);
-                view.SetRaycastBlock(true);
-            }
-            else
-            {
-                view.Bind(node, null);
-                view.SetRaycastBlock(false);
-            }
+            view.Bind(node, viewOnly ? null : (Action<int>)HandleNodeClicked);
+            view.SetRaycastBlock(!viewOnly);
         }
         
-        // 간선 생성
+        // 간선 생성 및 배치
         foreach (var node in graph.Nodes)
         {
             if (node.NextNodeIds == null || node.NextNodeIds.Count == 0)
                 continue;
 
-            if (positions.TryGetValue(node.Id, out Vector2 start) == false)
+            if (positions.TryGetValue(node.Id, out Vector2 startPos) == false)
                 continue;
 
             foreach (int nextId in node.NextNodeIds)
             {
-                if (positions.TryGetValue(nextId, out Vector2 end) == false)
+                if (positions.TryGetValue(nextId, out Vector2 endPos) == false)
                     continue;
                 
                 var edge = Instantiate(edgePrefab, edgesRoot);
                 spawned.Add(edge.gameObject);
                 
-                edge.Set(node.Id, nextId, start, end);
-                
+                edge.Set(node.Id, nextId, startPos + totalOffset, endPos + totalOffset);
                 edgeViews.Add(edge);
             }
         }
-
-        if (actionRouter != null)
-            actionRouter.SetMapSeed(Managers.Instance.Game.MapCache.CurrentSeed);
         
-        SnapToStart();
+        if (content != null)
+        {
+            // 앵커를 중앙(0.5, 0.5)으로 설정
+            content.anchorMin = new Vector2(0.5f, 0.5f);
+            content.anchorMax = new Vector2(0.5f, 0.5f);
+            content.pivot = new Vector2(0.5f, 0.5f);
+        }
+       
+        if (graphRoot != null)
+        {
+            // 맵이 그려지는 루트도 중앙으로 고정
+            graphRoot.anchorMin = new Vector2(0.5f, 0.5f);
+            graphRoot.anchorMax = new Vector2(0.5f, 0.5f);
+            graphRoot.pivot = new Vector2(0.5f, 0.5f);
+            graphRoot.anchoredPosition = Vector2.zero; // 위치 리셋
+        }
+        
+        Canvas.ForceUpdateCanvases();
         
         if (nodesRoot != null)
             nodesRoot.SetAsLastSibling();
@@ -181,22 +201,52 @@ public class MapUIController :  MonoBehaviour
     private void BuildNeighbors(MapGraph graph)
     {
         neighborsById.Clear();
-
+        
         foreach (var n in graph.Nodes)
             neighborsById[n.Id] = new HashSet<int>();
 
         foreach (var from in graph.Nodes)
         {
             if (from.NextNodeIds == null) continue;
-
+            
             foreach (int toId in from.NextNodeIds)
             {
                 neighborsById[from.Id].Add(toId);
-
                 if (allowBacktracking && neighborsById.ContainsKey(toId))
-                   neighborsById[toId].Add(from.Id);
+                    neighborsById[toId].Add(from.Id);
             }
         }
+    }
+
+    public void SnapToNode(int nodeId)
+    {
+        if (scrollRect == null || content == null)
+            return;
+
+        if (nodeViewsById.TryGetValue(nodeId, out MapNodeView targetView) == false)
+            return;
+        
+        Canvas.ForceUpdateCanvases();
+
+        RectTransform targetRT = targetView.GetComponent<RectTransform>();
+        RectTransform viewportRT = scrollRect.viewport;
+        
+        Vector3 nodeWorldPos = targetRT.position;
+        Vector3[] viewportCorners = new Vector3[4];
+        viewportRT.GetWorldCorners(viewportCorners);
+        Vector3 viewportCenterWorld = (viewportCorners[0] + viewportCorners[2]) * 0.5f;
+        
+        Vector3 worldDelta = viewportCenterWorld - nodeWorldPos;
+        
+        Vector3 localDelta = content.parent.InverseTransformVector(worldDelta);
+        
+        Vector2 newPos = content.anchoredPosition;
+        newPos.y += localDelta.y;
+        content.anchoredPosition = newPos;
+        
+        scrollRect.verticalNormalizedPosition = Mathf.Clamp01(scrollRect.verticalNormalizedPosition);
+        
+        Debug.Log($"[MapUI] SnapToNode({nodeId}) ::: NodeWorldY={nodeWorldPos.y}, ViewCenterWorldY={viewportCenterWorld.y}, DeltaY={localDelta.y}, FinalAnchoredY={content.anchoredPosition.y}");
     }
 
     private int FindStartNodeId(MapGraph graph)
@@ -211,19 +261,6 @@ public class MapUIController :  MonoBehaviour
         }
 
         return (graph.Nodes.Count > 0) ? graph.Nodes[0].Id : -1;
-    }
-
-    private void SnapToStart()
-    {
-        if (scrollRect == null)
-            return;
-        
-        Canvas.ForceUpdateCanvases();
-        
-        scrollRect.StopMovement();
-        scrollRect.velocity = Vector2.zero;
-        
-        scrollRect.verticalNormalizedPosition = 0f;
     }
 
     private void ResizeContentToFit(Dictionary<int, Vector2> positions)
@@ -288,16 +325,21 @@ public class MapUIController :  MonoBehaviour
 
     private void HandleNodeClicked(int id)
     {
+        Debug.Log($"[MapUI] Node Clicked: {id}");
+        
         if (currentMode == MapUIMode.ViewOnly)
-            return;
-
+             return;
+        
         if (actionRouter == null)
-            actionRouter = FindFirstObjectByType<MapNodeActionRouter>();
-
+                actionRouter = FindFirstObjectByType<MapNodeActionRouter>();
+        
         var cache = Managers.Instance.Game.MapCache;
         if (cache == null || cache.CurrentGraph == null)
             return;
 
+        if (nodesById.TryGetValue(id, out var node) == false || node == null)
+            return;
+        
         if (cache.CurrentNodeId < 0)
         {
             int startId = FindStartNodeId(cache.CurrentGraph);
@@ -306,13 +348,19 @@ public class MapUIController :  MonoBehaviour
         }
         else
         {
-            if (neighborsById.TryGetValue(cache.CurrentNodeId, out var nb) == false || nb.Contains(id) == false)
-                return;
+            bool isReclickingCurrentStart = (id == cache.CurrentNodeId && node.Type == NodeType.Start);
+
+            if (isReclickingCurrentStart)
+            {
+                // Start 노드에서는 본인 씬 진입 허용
+            }
+            else
+            {
+                if (neighborsById.TryGetValue(cache.CurrentNodeId, out var nb) == false || nb.Contains(id) == false)
+                    return;    
+            }
         }
-
-        if (nodesById.TryGetValue(id, out var node) == false || node == null)
-            return;
-
+        
         actionRouter.OnNodeClicked(node);
     }
 

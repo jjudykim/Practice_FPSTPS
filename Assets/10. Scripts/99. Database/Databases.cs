@@ -8,6 +8,8 @@ public class Databases : SingletonBase<Databases>
     public WeaponDatabase Weapon { get; private set; }
     public BulletDatabase Bullet { get; private set; }
     
+    protected override bool AllowAutoCreate => true;
+    
     // 전체 DB 로딩 완료 여부
     public bool IsLoaded { get; private set; }
     

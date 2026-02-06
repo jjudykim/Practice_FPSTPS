@@ -15,9 +15,18 @@ public class EnemyDeadState : IEnemyState
     {
         owner.SetLock(true);
 
-        owner.StopMove();
-        owner.SetChaseSpeed(false);
+        if (owner.GetComponent<Animator>() != null)
+        {
+            var anim = owner.GetComponent<Animator>();
+            anim.ResetTrigger("Attack");
+            anim.ResetTrigger("Damage");
+            anim.ResetTrigger("Chase");
+            anim.SetFloat("Speed", 0f);
+        }
         owner.AnimTriggerDead();
+
+        owner.StopMove();
+        
         despawnTimer = 2.0f;
         Debug.Log("[Enemy] ::: Enter Dead");
     }

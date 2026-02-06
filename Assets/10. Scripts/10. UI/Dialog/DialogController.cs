@@ -1,4 +1,4 @@
- using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -16,17 +16,17 @@ public class DialogController : MonoBehaviour
     public class DialogNodeRow
     {
         public string Id { get; set; }        // 노드 고유 ID
-        public string Speaker { get; set; }  
-        public string Text { get; set; }      
-        public string NextId { get; set; }   
+        public string Speaker { get; set; }   // 화자(대부분 1명이라면 고정값 가능)
+        public string Text { get; set; }      // 대사 본문
+        public string NextId { get; set; }    // 자동 진행할 다음 노드 ID(없으면 선택지 노드일 수 있음)
     }
 
     [Serializable]
     public class DialogChoiceRow
     {
-        public string FromId { get; set; }    
-        public string ChoiceText { get; set; }
-        public string NextId { get; set; }
+        public string FromId { get; set; }     // 이 노드에서 선택지를 띄움
+        public string ChoiceText { get; set; } // 버튼에 표시할 문구
+        public string NextId { get; set; }     // 선택 시 이동할 노드 ID
     }
 
     // ===========================

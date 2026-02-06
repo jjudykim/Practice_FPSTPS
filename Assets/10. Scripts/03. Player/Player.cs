@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using jjudy;
+using Unity.VisualScripting;
 using UnityEngine.Serialization;
 
 public class Player : SingletonBase<Player>
@@ -25,10 +26,18 @@ public class Player : SingletonBase<Player>
     public bool CanRun => (IsRolling == false) && stats.Resources.CurStamina.Value > 0;
     public bool CanRoll => (IsRolling == false) && stats.Resources.CurStamina.Value >= stats.DodgeStaminaCost;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+        
         stats.BaseStatsesSo = baseStatsSO;
         stats.InitRuntime();
+        Debug.Log($"[Player] Awake scene={gameObject.scene.name} lockState={Cursor.lockState} visible={Cursor.visible}");
+    }
+
+    private void OnDestroy()
+    {
+        Debug.LogError($"[Player] OnDestroy CALLED! name={name} scene={gameObject.scene.name}\n{Environment.StackTrace}");
     }
 
     private void Update()

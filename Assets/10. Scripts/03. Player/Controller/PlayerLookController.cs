@@ -33,13 +33,17 @@ public class PlayerLookController : MonoBehaviour
     private float pitch;
 
     private InputManager input;
-
     private CameraController.CameraMode lastMode;
+    
+    private bool lookEnabled = true;
 
     private void Awake()
     {
         if (playerRoot == null)
             playerRoot = transform;
+        
+        if (cameraController == null)
+            cameraController = Camera.main.GetComponent<CameraController>();
         
         input = Managers.Instance.Input;
         
@@ -61,6 +65,23 @@ public class PlayerLookController : MonoBehaviour
             LookWorldDirFlat.Normalize();
     }
 
+    private void OnEnable()
+    {
+        if (DialogManager.Instance != null)
+        {
+            DialogManager.Instance.OnDialogOpenChanged += HandleDialogOpenChanged;
+            lookEnabled = !DialogManager.Instance.IsOpen;
+        }
+    }
+    
+    private void OnDisable()
+    {
+        if (DialogManager.Instance != null)
+            DialogManager.Instance.OnDialogOpenChanged -= HandleDialogOpenChanged;
+    }
+    
+    private void HandleDialogOpenChanged(bool isOpen) => lookEnabled = !isOpen;
+
     private void Update()
     {
         if (cameraController.Mode != lastMode)
@@ -74,7 +95,7 @@ public class PlayerLookController : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (cameraController == null || playerRoot == null)
+        if (cameraController == null || playerRoot == null || !lookEnabled)
             return;
 
         switch (cameraController.Mode)
@@ -84,14 +105,14 @@ public class PlayerLookController : MonoBehaviour
                 UpdateAimData_FirstPerson();
                 break;
             case CameraController.CameraMode.QuarterView:
-                ApplyQuaterRotation();
+                ApplyQuarterRotation();
                 break;
         }
     }
 
     private void TickInput()
     {
-        if (input == null)
+        if (input == null || lookEnabled == false)
             return;
 
         float mouseX = input.POVX;
@@ -118,8 +139,11 @@ public class PlayerLookController : MonoBehaviour
             headPivot.localRotation = Quaternion.Euler(0f, 0f, -Pitch);
     }
 
-    private void ApplyQuaterRotation()
+    private void ApplyQuarterRotation()
     {
+        if (lookEnabled == false)
+            return;
+        
         if (combatController != null && combatController.IsAiming)
             return;
         

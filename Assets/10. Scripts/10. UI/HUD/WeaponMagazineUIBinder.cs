@@ -9,6 +9,11 @@ public class WeaponMagazineUIBinder : MonoBehaviour
     [Header("Runtime (ReadOnly)")]
     [SerializeField] private WeaponBase boundWeapon;
 
+    public void SetMagazineUI(MagazineUI magazineUI)
+    {
+        this.magazineUI = magazineUI;
+    }
+
     private void Awake()
     {
         if (magazineUI == null)

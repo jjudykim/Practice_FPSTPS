@@ -1,64 +1,76 @@
 using System;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
-public class SingletonBase<T> : MonoBehaviour where T : MonoBehaviour
+public abstract class SingletonBase<T> : MonoBehaviour where T : MonoBehaviour
 {
     protected static T instance;
-    private static readonly object lockObj = new Object();
+
+    private static readonly object lockObj = new object();
     private static bool applicationIsQuitting = false;
     private static bool isInitialized = false;
 
     public static bool IsInitialized => isInitialized && instance != null;
-
-    [Obsolete("Obsolete")]
+    protected virtual bool AllowAutoCreate => false;
+    
     public static T Instance
     {
         get
         {
             if (applicationIsQuitting)
             {
-                Debug.LogWarning($"[Singleton] ::: {typeof(T)} 접근 시도됨: 애플리케이션 종료 중");
+                Debug.LogWarning($"[Singleton] ::: {typeof(T).Name} 접근 시도됨: 애플리케이션 종료 중");
                 return null;
             }
 
             lock (lockObj)
             {
+                if (instance != null)
+                    return instance;
+
+                instance = FindObjectOfType<T>();
+
                 if (instance == null)
                 {
-                    instance = FindObjectOfType<T>();
-
-                    if (instance == null)
-                    {
-                        var singletonObject = new GameObject(typeof(T).Name);
-                        instance = singletonObject.AddComponent<T>();
-                        DontDestroyOnLoad(singletonObject);
-                    }
-
-                    (instance as SingletonBase<T>)?.OnInitialize();
-                    isInitialized = true;
+                    Debug.LogWarning($"[Singleton] ::: {typeof(T).Name} not found.");
+                    return null;
+                }
+                
+                var sb = instance as SingletonBase<T>;
+                if (sb != null && !isInitialized)
+                {
+                    sb.InternalInitialize();
                 }
 
                 return instance;
             }
         }
     }
-    
+
     protected virtual void Awake()
     {
-        if (instance == null)
-        {
-            instance = this as T;
-            DontDestroyOnLoad(this);
-
-            OnInitialize();
-            isInitialized = true;
-        }
-        else if (instance != this)
+        if (instance != null && instance != this)
         {
             Debug.LogWarning($"[Singleton] ::: 중복 인스턴스 감지 : {gameObject.name} 파괴");
             Destroy(gameObject);
+            return;
         }
+
+        instance = this as T;
+        
+        DontDestroyOnLoad(transform.root.gameObject);
+
+        if (!isInitialized)
+            InternalInitialize();
+    }
+
+    private void InternalInitialize()
+    {
+        // 중복 호출 방지
+        if (isInitialized)
+            return;
+
+        OnInitialize();
+        isInitialized = true;
     }
 
     protected virtual void OnApplicationQuit()
@@ -73,34 +85,27 @@ public class SingletonBase<T> : MonoBehaviour where T : MonoBehaviour
             OnDispose();
             instance = null;
             isInitialized = false;
-            applicationIsQuitting = true;
         }
     }
     
-    /// <summary>
-    /// 싱글톤 초기화 시점에서 호출됨 (오버라이드 OK)
-    /// </summary>
     protected virtual void OnInitialize() { }
-    
-    /// <summary>
-    /// 싱글톤 제거 시점에서 호출됨 (오버라이드 OK)
-    /// </summary>
     protected virtual void OnDispose() { }
 
     public static void ResetInstance()
     {
-        if (instance != null)
-        {
-            (instance as SingletonBase<T>)?.OnDispose();
-            
+        if (instance == null)
+            return;
+
+        var sb = instance as SingletonBase<T>;
+        sb?.OnDispose();
+
 #if UNITY_EDITOR
-            DestroyImmediate((instance as MonoBehaviour)?.gameObject);
+        DestroyImmediate((instance as MonoBehaviour)?.gameObject);
 #else
-            Destroy((instance as MonoBehaviour)?.gameObject);
-#endif  
-            instance = null;
-            isInitialized = false;
-            applicationIsQuitting = false;
-        }
+        Destroy((instance as MonoBehaviour)?.gameObject);
+#endif
+
+        instance = null;
+        isInitialized = false;
     }
 }

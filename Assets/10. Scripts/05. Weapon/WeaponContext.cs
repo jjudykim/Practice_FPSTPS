@@ -22,4 +22,9 @@ public class WeaponContext
     {
         IsADS = isADS;
     }
+
+    public void SetIsAiming(bool isAiming)
+    {
+        IsADS = isAiming;
+    }
 }
