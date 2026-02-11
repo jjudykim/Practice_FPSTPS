@@ -41,79 +41,29 @@ public class TownBootstrap : MonoBehaviour
 
     private void OnEnable()
     {
-        ApplyTownRules();
-        playerRoot.transform.position = entryPoint.position;
-        playerRoot.transform.rotation = entryPoint.rotation;
+        var player = Player.Instance;
+        if (player == null)
+            return;
+        
+        player.SetPositionAndRotation(entryPoint.position, entryPoint.rotation, entryPoint.localScale);
+        player.ResetForTown();
+        
+        ApplyTownCameraAndCursorPolicy();
     }
 
     private void OnDisable()
     {
-        RestoreRules();
+        if (cursorPolicyApplied)
+        {
+            Cursor.lockState = prevLockMode;
+            Cursor.visible = prevCursorVisible;
+            cursorPolicyApplied = false;
+        }
     }
 
     private async void Start()
     {
         await Databases.Instance.PreloadAllAsync();
-    }
-
-    /// <summary>
-    /// Town 씬 규칙 적용
-    /// </summary>
-    public void ApplyTownRules()
-    {
-        if (applied)
-            return;
-
-        if (playerRoot == null)
-        {
-            Debug.LogError("[TownBootstrap] playerRoot is null. Assign PlayerCat root in Inspector.");
-            return;
-        }
-
-        // ---------------------------
-        // 현재 상태 저장
-        // ---------------------------
-        prevCombatRootEnabled = combatRoot != null && combatRoot.activeSelf;
-        prevCombatEnabled = playerCombatController != null && playerCombatController.enabled;
-
-        // ---------------------------
-        // Town 규칙 적용
-        // ---------------------------
-        // 전투 컨트롤러 차단 (가장 강력한 1차 게이트)
-        if (playerCombatController != null)
-            playerCombatController.enabled = false;
-        
-        // 전투관련 요소 차단 (가장 강력한 1차 게이트)
-        if (combatRoot != null)
-            combatRoot.SetActive(false);
-        
-        ApplyTownCameraAndCursorPolicy();
-
-        applied = true;
-
-        Debug.Log("[TownBootstrap] Town rules applied.");
-    }
-
-    /// <summary>
-    /// Town 규칙 원복 (전투 씬으로 넘어갈 때 복원)
-    /// </summary>
-    public void RestoreRules()
-    {
-        if (applied == false)
-            return;
-
-        // 저장했던 상태로 되돌림
-        if (playerCombatController != null)
-            playerCombatController.enabled = prevCombatEnabled;
-
-        if (combatRoot != null)
-            combatRoot.SetActive(prevCombatRootEnabled);
-
-        RestoreTownCameraAndCursorPolicy();
-            
-        applied = false;
-
-        Debug.Log("[TownBootstrap] Town rules restored.");
     }
     
     private void ApplyTownCameraAndCursorPolicy()
@@ -132,15 +82,10 @@ public class TownBootstrap : MonoBehaviour
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
-    }
-    
-    private void RestoreTownCameraAndCursorPolicy()
-    {
-        if (cursorPolicyApplied == false)
-            return;
 
-        Cursor.lockState = prevLockMode;
-        Cursor.visible = prevCursorVisible;
-        cursorPolicyApplied = false;
+        if (CameraController.Instance != null)
+        {
+            CameraController.Instance.SetMode(CameraController.CameraMode.FirstPerson);
+        }
     }
 }

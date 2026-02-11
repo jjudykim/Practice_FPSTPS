@@ -2521,6 +2521,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b8cb09e73c84849b71737633e10f540, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
+  combatRoot: {fileID: 103188153611923528}
+  combatController: {fileID: 2968167878872338190}
   baseStatsSO: {fileID: 11400000, guid: 96ccbaf703ab59444b3fed0f4d3de19b, type: 2}
 --- !u!114 &7344804463398660623
 MonoBehaviour:

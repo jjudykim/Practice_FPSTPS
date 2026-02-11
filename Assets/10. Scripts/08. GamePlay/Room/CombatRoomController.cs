@@ -35,6 +35,8 @@ public class CombatRoomController : RoomControllerBase
 
     public override void Init(int nodeId)
     {
+        base.Init(nodeId);
+        
         elapsed = 0f;
         killCount = 0;
         aliveEnemyCount = 0;

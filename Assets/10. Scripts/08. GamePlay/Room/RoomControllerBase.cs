@@ -18,6 +18,11 @@ public abstract class RoomControllerBase : MonoBehaviour
         NodeId = nodeId;
         isFinished = false;
 
+        if (Player.Instance != null)
+        {
+            Player.Instance.EnableCombatSystem(true);
+        }
+
         if (mapUI == null)
             mapUI = FindFirstObjectByType<MapUIController>();
     }

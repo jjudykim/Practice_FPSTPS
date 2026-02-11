@@ -20,7 +20,8 @@ public class EndPointTrigger : MonoBehaviour
         if (room == null)
             Debug.LogError("[EndPointTrigger] CombatRoomController reference is missing.");
         
-        SetActive(false);
+        if (room is CombatRoomController)
+            SetActive(false);
     }
 
     public void SetActive(bool active)

@@ -6,6 +6,10 @@ using UnityEngine.Serialization;
 
 public class Player : SingletonBase<Player>
 {
+    [Header("Internal References")]
+    [SerializeField] private GameObject combatRoot;
+    [SerializeField] private PlayerCombatController combatController;
+    
     [Header("Runtime Stats")] 
     [SerializeField] private PlayerStatsSO baseStatsSO;
     
@@ -22,10 +26,17 @@ public class Player : SingletonBase<Player>
     
     public PlayerStatsEffecter Stats => stats;
 
+    public GameObject CombatRoot => combatRoot;
+    public PlayerCombatController CombatController => combatController;
+    
+
     public bool IsDead => stats.Resources.IsDead;
     public bool CanRun => (IsRolling == false) && stats.Resources.CurStamina.Value > 0;
     public bool CanRoll => (IsRolling == false) && stats.Resources.CurStamina.Value >= stats.DodgeStaminaCost;
 
+    // ====================================
+    //           Event Function
+    // ====================================
     protected override void Awake()
     {
         base.Awake();
@@ -47,7 +58,22 @@ public class Player : SingletonBase<Player>
 
         stats.TickStaminaRegen(Time.deltaTime);
     }
-    
+
+    public void RefreshReferences()
+    {
+        if (GlobalHUDUI.Instance != null)
+        {
+            GlobalHUDUI.Instance.RefreshAll();
+        }
+    }
+
+    public void SetPositionAndRotation(Vector3 pos, Quaternion rot, Vector3 scale)
+    {
+        transform.position = pos;
+        transform.rotation = rot;
+        transform.localScale = scale;
+    }
+
     public void ApplyDamage(int damage)
     {
         stats.Resources.ApplyDamage(damage);
@@ -74,6 +100,20 @@ public class Player : SingletonBase<Player>
         stats.RecalculateEffectiveStats();
     }
 
+    public void EnableCombatSystem(bool enable)
+    {
+        if (combatRoot != null) 
+            combatRoot.SetActive(enable);
+        if (combatController != null)
+        {
+            combatController.InitializeCombatState();
+            combatController.enabled = enable;
+        }
+
+        if (enable)
+            RefreshReferences();
+    }
+
     public void ResetForTown()
     {
         if (stats.Resources.IsDead)
@@ -82,17 +122,14 @@ public class Player : SingletonBase<Player>
         }
         
         stats.InitRuntime();
-
-        var combat = GetComponentInChildren<PlayerCombatController>();
-        if (combat != null)
-        {
-            combat.InitializeCombatState();
-            combat.enabled = false;
-        }
+        
+        EnableCombatSystem(false);
         
         IsRolling = false;
         IsRunning = false;
         IsAiming = false;
         IsReloading = false;
+        
+        RefreshReferences();
     }
 }

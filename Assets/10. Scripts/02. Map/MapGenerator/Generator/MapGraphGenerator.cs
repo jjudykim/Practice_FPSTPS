@@ -61,6 +61,17 @@ public class MapGraphGenerator : IMapGenerator
         throw new InvalidOperationException("Failed to generate valid map.");
     }
 
+    public static MapGraph GenerateFromData(MapData data)
+    {
+        if (data == null)
+            return null;
+
+        MapBuildRequest req = data.Request.ToRequest();
+        MapGraphGenerator instance = new MapGraphGenerator();
+
+        return instance.InternalBuild(req, req.Seed, data.UsedSeed);
+    }
+
     private MapGraph InternalBuild(MapBuildRequest req, int baseSeed, int usedSeed)
     {
         Random rng = new Random(usedSeed);

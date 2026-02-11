@@ -81,6 +81,10 @@ public class PlayerDamageReceiver : MonoBehaviour, IDamageable
         deathHandled = true;
 
         Debug.Log("[PlayerDamageReceiver] Player Dead! Disabling controllers...");
+        
+        // +추가) 사망 즉시 쿼터뷰로 전환
+        if (CameraController.Instance != null)
+            CameraController.Instance.SetMode(CameraController.CameraMode.QuarterView);
 
         // 1) Player 상태 플래그 정리
         player.IsRolling = false;

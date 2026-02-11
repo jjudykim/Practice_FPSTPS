@@ -17,7 +17,7 @@ public class GameManager
 {
     public GameState CurrentState { get; private set; } = GameState.Ready;
     public event Action<GameState> OnStateChanged;
-    
+    private MapPresetRepository mapRepo = new MapPresetRepository();
     private GameResultUI gameResultUI;
 
     public void GameOver() => Managers.Instance.StartCoroutine(CoHandleGameFinish(GameState.GameOver));
@@ -47,26 +47,42 @@ public class GameManager
     public void StartGame()
     {
         CurrentState = GameState.Playing;
-        OnStateChanged?.Invoke(CurrentState);
+        
+        if (BuildNewRunMap())
+        {
+            OnStateChanged?.Invoke(CurrentState);
+            Debug.Log("[GameManager] ::: Game Started and Map Build Success");
+        }
+        else
+            Debug.Log("[GameManager] ::: Failed to start game : Map Build Failed.");
+    }
+
+    private bool BuildNewRunMap()
+    {
+        if (mapRepo.TryPickRandomSeed(out int selectedSeed))
+        {
+            if (mapRepo.TryLoadPresetBySeed(selectedSeed, out MapData data))
+            {
+                var graph = MapGraphGenerator.GenerateFromData(data);
+                if (graph != null)
+                {
+                    SetCurrentMap(graph, selectedSeed, graph.StartNode.Id);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public void SetCurrentMap(MapGraph graph, int usedSeed, int startNodeId = -1)
     {
         if (graph == null)
-        {
-            Debug.LogError("[GameManager] ::: SetCurrentMap failed: graph is null");
             return;
-        }
         
         MapCache.SetGraph(graph, usedSeed);
 
-        //if (startNodeId >= 0)
-        //    MapCache.SetCurrentNode(startNodeId);
-        //else
-        //    MapCache.TrySetCurrentNodeToStartIfNeeded();
-        MapCache.SetCurrentNode(startNodeId);
-        
-        Debug.Log($"[GameManager] ::: CurrentMap cached. seed={usedSeed}, currentNodeId={MapCache.CurrentNodeId}");
+        if (startNodeId != -1)
+            MapCache.SetCurrentNode(startNodeId);
     }
 
     public void SelectNextNodeAndMove(int toNodeId)
