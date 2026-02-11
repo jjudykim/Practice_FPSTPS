@@ -73,4 +73,26 @@ public class Player : SingletonBase<Player>
     {
         stats.RecalculateEffectiveStats();
     }
+
+    public void ResetForTown()
+    {
+        if (stats.Resources.IsDead)
+        {
+            GetComponentInChildren<Animator>().Rebind();
+        }
+        
+        stats.InitRuntime();
+
+        var combat = GetComponentInChildren<PlayerCombatController>();
+        if (combat != null)
+        {
+            combat.InitializeCombatState();
+            combat.enabled = false;
+        }
+        
+        IsRolling = false;
+        IsRunning = false;
+        IsAiming = false;
+        IsReloading = false;
+    }
 }

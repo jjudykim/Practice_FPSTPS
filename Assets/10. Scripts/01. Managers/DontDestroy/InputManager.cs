@@ -28,6 +28,9 @@ public class InputManager
     // Map Toggle (원샷 입력)
     public bool SessionMap { get; private set; }
     
+    // Pause UI Toggle (원샷 입력)
+    public bool Pause { get; private set; }
+
     // Inventory Toggle (원샷 입력)
     public bool Inventory { get; private set; }
     
@@ -101,6 +104,7 @@ public class InputManager
         if (UIInputEnabled)
         {
             SessionMap = Input.GetKeyDown(KeyCode.M);
+            Pause =  Input.GetKeyDown(KeyCode.Escape);
             Inventory = Input.GetKeyDown(KeyCode.I);
         }
     }
@@ -112,6 +116,7 @@ public class InputManager
 
         ViewChange = false;
         SessionMap = false;
+        Pause = false;
         Inventory = false;
 
         QuickSlot1 = false;

@@ -58,6 +58,9 @@ public class PlayerDamageReceiver : MonoBehaviour, IDamageable
 
         if (player.IsDead)
             return;
+
+        if (player.IsRolling)
+            return;
         
         float raw = info.Damage;
         
@@ -107,12 +110,36 @@ public class PlayerDamageReceiver : MonoBehaviour, IDamageable
             }
         }
 
-        // TODO:
-        // - 사망 애니메이션 Trigger
-        // - 게임오버 UI / 세션 종료
-        // - 입력 잠금 / 커서 처리 등
+        Managers.Instance.Game.GameOver();
     }
-    
+
+    public void Resurrect()
+    {
+        deathHandled = false;
+      
+      // 비활성화했던 컴포넌트들 다시 활성화
+      if (disableOnDeath != null)
+      {
+          foreach(var behaviour in disableOnDeath)
+          {
+              if (behaviour != null && !(behaviour is PlayerCombatController))
+              {
+                  behaviour.enabled = true;
+              }
+          }
+      }
+
+      //콜라이더 다시 활성화
+      if (cachedColliders != null)
+      {
+          foreach(var col in cachedColliders)
+          {
+              if (col != null)
+                  col.enabled = true;
+          }
+      }
+    }
+
     private void AutoResolve()
     {
         if (player == null)

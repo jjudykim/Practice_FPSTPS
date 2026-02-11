@@ -1,8 +1,5 @@
 using System;
-using System.Data;
 using System.Globalization;
-using UnityEngine;
-using UnityEngine.Serialization;
 
 [Serializable]
 public class SaveData

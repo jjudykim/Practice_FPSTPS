@@ -11,6 +11,8 @@ public class LobbyController : MonoBehaviour
     [SerializeField] private GameObject menuBtnGroup;
     [SerializeField] private GameObject saveLoadGroup;
     
+    [SerializeField] private NameInputUI nameInputUI;
+    
     [Header("Menu Buttons")]
     [SerializeField] private GameObject playButtonRoot;
     [SerializeField] private GameObject exitButtonRoot;
@@ -72,14 +74,20 @@ public class LobbyController : MonoBehaviour
 
     public void OnSaveSlotPressed(int slotIndex)
     {
-        Debug.Log($"[LobbyController] OnSaveSlotPressed(slot={slotIndex}) called. transitioning={isTransitioning}");
-        
         if (isTransitioning)
             return;
 
         bool hasSave = saveDataManager.HasSaveFile(slotIndex);
-        Debug.Log($"[LobbyController] slot={slotIndex} HasSaveFile={hasSave}");
-        StartCoroutine(coFadeOutAndEnterGame(slotIndex, hasSave));
+
+        if (hasSave)
+        {
+            StartCoroutine(coFadeOutAndEnterGame(slotIndex, true));
+        }
+        else
+        {
+            nameInputUI.Open(slotIndex);
+        }
+        
     }
 
     public void OnSaveSlotPressed_0() => OnSaveSlotPressed(0);
@@ -116,8 +124,11 @@ public class LobbyController : MonoBehaviour
             return;
         }
 
-        string title = $"Stage {data.progress.stage.stageIndex}"; 
-        string meta = data.GetLastSaveLocalText();
+        string playerName = string.IsNullOrEmpty(data.progress.playerName) ? "Player" : data.progress.playerName;
+        int level = data.progress.growth.level;
+        
+        string title = $"{playerName} / Lv. {level}"; 
+        string meta = $"Last Save : {data.GetLastSaveLocalText()}";
         
         view.SetText(title, meta, true);
     }
@@ -147,7 +158,7 @@ public class LobbyController : MonoBehaviour
             Debug.Log($"[Lobby] New Game (slot={slotIndex})");
         }
 
-        SceneManager.LoadScene(gameSceneName);
+        Managers.Instance.Scene.LoadScene(gameSceneName);
     }
 
     private IEnumerator CoFade(float from, float to)

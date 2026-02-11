@@ -14,6 +14,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     [Header("References")]
     [SerializeField] private Transform target;
     [SerializeField] private NavMeshAgent agent;
+    [SerializeField] private Transform floatingTextPivot;
     
     [Header("Animation")]
     [SerializeField] private Animator animator;
@@ -72,7 +73,15 @@ public class EnemyController : MonoBehaviour, IDamageable
     [SerializeField] private float eliteSpreadAngle = 18f;           
     [SerializeField] private float elitePelletDamageMultiplier = 0.5f; 
     [SerializeField] private bool eliteRandomizeSpread = false;     
-    [SerializeField] private float elitePitchJitter = 0f;  
+    [SerializeField] private float elitePitchJitter = 0f; 
+    
+    [Header("Drop Rewards")]
+    [SerializeField] private GameObject goldPrefab;
+    [SerializeField] private GameObject expPrefab;
+    [SerializeField] private int minGold = 10;
+    [SerializeField] private int maxGold = 30;
+    [SerializeField] private int expReward = 50;
+    [SerializeField] private float dropRadius = 1.5f;
     
     // Attack 트리거
     private bool pendingAttack = false;
@@ -149,7 +158,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         // NavMesh Agent 기본 세팅
         agent.updateRotation = true;
         agent.updatePosition = true;
-        agent.stoppingDistance = 0.0f;
+        agent.stoppingDistance = attackRange - 1.0f;
 
         baseAgentSpeed = agent.speed;
 
@@ -173,6 +182,9 @@ public class EnemyController : MonoBehaviour, IDamageable
             fsm.Tick(dt);
             return;
         }
+
+        if (attackTimer > 0f)
+            attackTimer -= dt;
 
         UpdateAnimatorSpeed(dt);
         
@@ -563,6 +575,14 @@ public class EnemyController : MonoBehaviour, IDamageable
         if (dmg <= 0)
             return;
 
+        if (Managers.Instance.FloatingText != null)
+        {
+            if (info.HitPart == HitPart.Body)
+                Managers.Instance.FloatingText.Show(floatingTextPivot.position, dmg.ToString(), Color.white);
+            if (info.HitPart == HitPart.Head)
+                Managers.Instance.FloatingText.Show(floatingTextPivot.position, dmg.ToString(), Color.yellow);
+        }
+
         ApplyDamage(dmg);
     }
     
@@ -608,10 +628,53 @@ public class EnemyController : MonoBehaviour, IDamageable
             }
         }
 
+        SpawnDropItems();
+
         Debug.Log("[Enemy] ::: Death handled (colliders off, agent off)");
         OnDead?.Invoke(this);
+
+        if (enemyType == EnemyType.Elite)
+        {
+            Managers.Instance.Game.GameClear();
+        }
+    }
+
+    private void SpawnDropItems()
+    {
+        // 1. 골드 생성
+        int totalGold = Random.Range(minGold, maxGold);
+        if (enemyType == EnemyType.Elite) totalGold *= 5; // 엘리트는 5배
+    
+        // 골드 프리팹이 있다면 5개 정도로 나눠서 생성
+        int goldPieceCount = 3;
+        int goldPerPiece = totalGold / goldPieceCount;
+    
+        for (int i = 0; i < goldPieceCount; i++)
+        {
+            SpawnSingleItem(goldPrefab, DropItemType.Gold, goldPerPiece);
+        }
+    
+        // 2. 경험치 생성
+        int finalExp = enemyType == EnemyType.Elite ? expReward * 10 : expReward;
+        SpawnSingleItem(expPrefab, DropItemType.Exp, finalExp);
     }
     
+    private void SpawnSingleItem(GameObject prefab, DropItemType type, int val)
+    {
+        if (prefab == null) return;
+    
+        Vector2 randomCircle = UnityEngine.Random.insideUnitCircle * dropRadius;
+        Vector3 spawnOffset = new Vector3(randomCircle.x, 0.5f, randomCircle.y);
+        Vector3 finalSpawnPos = transform.position + spawnOffset;
+        
+        GameObject go = Instantiate(prefab, finalSpawnPos, Quaternion.identity);
+        var dropItem = go.GetComponent<FieldDropItem>();
+        if (dropItem != null)
+        {
+            dropItem.Init(type, val);
+        }
+    }
+
     private void ApplyTypeModifiers()
     {
         if (enemyType != EnemyType.Elite)

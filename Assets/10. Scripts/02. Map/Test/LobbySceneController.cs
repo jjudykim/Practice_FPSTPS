@@ -7,6 +7,6 @@ public class LobbySceneController : MonoBehaviour
 
     public void OnClickStart()
     {
-        SceneManager.LoadScene(mapSceneName);
+        Managers.Instance.Scene.LoadScene(mapSceneName);
     }
 }

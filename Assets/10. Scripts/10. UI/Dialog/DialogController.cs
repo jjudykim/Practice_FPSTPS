@@ -104,47 +104,48 @@ public class DialogController : MonoBehaviour
     private void LoadAllData()
     {
         // Nodes
-        string nodesPath = Path.Combine(Application.persistentDataPath + "/Table/", nodesFileName);
+        string nodesPath = Path.Combine(Application.persistentDataPath, "Table", nodesFileName);
+        if (File.Exists(nodesPath) == false)
+        {
+            nodesPath = Path.Combine(Application.streamingAssetsPath, "Table", nodesFileName);
+        }
         List<DialogNodeRow> nodes = TSVReader.ReadTable<DialogNodeRow>(nodesPath);
 
         nodeById = new Dictionary<string, DialogNodeRow>(StringComparer.Ordinal);
-        for (int i = 0; i < nodes.Count; i++)
+        if (nodes != null)
         {
-            DialogNodeRow row = nodes[i];
-
-            if (string.IsNullOrWhiteSpace(row.Id))
+            for (int i = 0; i < nodes.Count; i++)
             {
-                Debug.LogWarning($"[DialogController] Node row has empty Id at index={i}");
-                continue;
+                DialogNodeRow row = nodes[i];
+                if (string.IsNullOrWhiteSpace(row.Id)) continue;
+                if (nodeById.ContainsKey(row.Id)) continue;
+                nodeById.Add(row.Id, row);
             }
-
-            if (nodeById.ContainsKey(row.Id))
-            {
-                Debug.LogWarning($"[DialogController] Duplicate Node Id detected: {row.Id} (index={i})");
-                continue;
-            }
-
-            nodeById.Add(row.Id, row);
         }
 
         // Choices
-        string choicesPath = Path.Combine(Application.persistentDataPath + "/Table/", choicesFileName);
+        string choicesPath = Path.Combine(Application.persistentDataPath, "Table", choicesFileName);
+        if (File.Exists(choicesPath) == false)
+        {
+            choicesPath = Path.Combine(Application.streamingAssetsPath, "Table", choicesFileName);
+        }
         List<DialogChoiceRow> choices = TSVReader.ReadTable<DialogChoiceRow>(choicesPath);
 
         choicesByFromId = new Dictionary<string, List<DialogChoiceRow>>(StringComparer.Ordinal);
-        for (int i = 0; i < choices.Count; i++)
+        if (choices != null)
         {
-            DialogChoiceRow c = choices[i];
-            if (string.IsNullOrWhiteSpace(c.FromId))
-                continue;
-
-            if (choicesByFromId.TryGetValue(c.FromId, out List<DialogChoiceRow> list) == false)
+            for (int i = 0; i < choices.Count; i++)
             {
-                list = new List<DialogChoiceRow>();
-                choicesByFromId.Add(c.FromId, list);
-            }
+                DialogChoiceRow c = choices[i];
+                if (string.IsNullOrWhiteSpace(c.FromId)) continue;
 
-            list.Add(c);
+                if (choicesByFromId.TryGetValue(c.FromId, out List<DialogChoiceRow> list) == false)
+                {
+                    list = new List<DialogChoiceRow>();
+                    choicesByFromId.Add(c.FromId, list);
+                }
+                list.Add(c);
+            }
         }
 
         Debug.Log($"[DialogController] Loaded Nodes={nodeById.Count}, ChoicesGroups={choicesByFromId.Count}");
@@ -159,7 +160,7 @@ public class DialogController : MonoBehaviour
 
         while (string.IsNullOrWhiteSpace(currentId) == false)
         {
-            if (nodeById.TryGetValue(currentId, out DialogNodeRow node) == null)
+            if (nodeById.TryGetValue(currentId, out DialogNodeRow node) == false)
             {
                 Debug.LogError($"[DialogController] Node not found: {currentId}");
                 yield break;
@@ -171,6 +172,8 @@ public class DialogController : MonoBehaviour
 
             // 2) 대사 타자 출력
             yield return StartCoroutine(CoTypeText(node.Text));
+
+            yield return StartCoroutine(CoWaitInput());
 
             // 3) 선택지 노드인지 검사
             if (choicesByFromId.TryGetValue(currentId, out List<DialogChoiceRow> choiceList) 
@@ -209,6 +212,15 @@ public class DialogController : MonoBehaviour
         Debug.Log("[DialogController] Dialog finished. (autoCloseOff)");
     }
 
+    private IEnumerator CoWaitInput()
+    {
+        requestSkipTyping = false;
+        yield return null;
+        yield return new WaitUntil(() => requestSkipTyping);
+
+        requestSkipTyping = false;
+    }
+
     // ===========================
     // 타자 출력
     // ===========================
@@ -239,7 +251,6 @@ public class DialogController : MonoBehaviour
         }
 
         isTyping = false;
-        requestSkipTyping = false;
     }
 
     // ===========================

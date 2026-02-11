@@ -1,9 +1,11 @@
 using UnityEngine;
 using System;
+using Unity.VisualScripting;
 
 public abstract class RoomControllerBase : MonoBehaviour
 {
     [SerializeField] private MapUIController mapUI;
+    [SerializeField] private GameObject pauseUI;
     
     public int NodeId { get; private set; } = -1;
     
@@ -24,6 +26,29 @@ public abstract class RoomControllerBase : MonoBehaviour
     {
         if (Managers.Instance.Input.SessionMap)
             HandleMapToggle();
+
+        if (Managers.Instance.Input.Pause)
+            HandlePauseUIToggle();
+
+    }
+
+    private void HandlePauseUIToggle()
+    {
+        if (pauseUI == null)
+            return;
+
+        var pause = pauseUI.GetComponent<PauseUI>();
+
+        if (pause.IsPaused)
+        {
+            pause.Resume();
+            pauseUI.SetActive(false);
+        }
+        else
+        {
+            pause.Pause();
+            pauseUI.SetActive(true);
+        }
     }
 
     private void HandleMapToggle()
@@ -88,5 +113,9 @@ public abstract class RoomControllerBase : MonoBehaviour
         Debug.Log($"[RoomControllerBase] Room Aborted. nodeId={NodeId}");
 
         OnRoomFinished?.Invoke(result);
+    }
+
+    public virtual void OnPlayerReachedEndPoint()
+    {
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using jjudy;
 using UnityEngine;
 
 public class SaveDataManager
@@ -12,6 +13,11 @@ public class SaveDataManager
 
     public int CurrentSlotIndex { get; private set; } = 0;
     public SaveData Data { get; private set; }
+    
+    public ObservableIntValue Gold { get; } = new ObservableIntValue();
+    public ObservableIntValue Level { get; } = new ObservableIntValue();
+    public ObservableIntValue Exp { get; } = new ObservableIntValue();
+    public ObservableIntValue MaxExp { get; } = new ObservableIntValue();
     
     public event Action<int, SaveData> OnLoaded;
     public event Action<int, SaveData> OnSaved;
@@ -41,6 +47,8 @@ public class SaveDataManager
 
         Data = SaveData.CreateNew(saveVersion);
 
+        SyncObservables();
+
         OnCreatedNew?.Invoke(CurrentSlotIndex, Data);
 
         if (saveImmediately)
@@ -63,8 +71,41 @@ public class SaveDataManager
         }
 
         Data = loaded;
+
+        SyncObservables();
+        
         OnLoaded?.Invoke(CurrentSlotIndex, Data);
         return Data;
+    }
+    
+    private void SyncObservables()
+    {
+        if (Data == null) return;
+    
+        var progress = Data.progress;
+        Gold.Value = progress.currency.gold;
+        Level.Value = progress.growth.level;
+        Exp.Value = progress.growth.exp;
+        MaxExp.Value = progress.growth.GetRequiredExp();
+    }
+    public void AddGold(int amount)
+    {
+        if (Data == null) 
+            return;
+        Data.progress.currency.AddGold(amount); 
+        Gold.Value = Data.progress.currency.gold;
+    }
+    
+     public void AddExp(int amount)
+     {
+        if (Data == null) 
+            return;
+        Data.progress.growth.AddExp(amount);
+    
+        // 레벨업 가능성이 있으므로 모든 성장 관련 값 동기화
+        Level.Value = Data.progress.growth.level;
+        Exp.Value = Data.progress.growth.exp;
+        MaxExp.Value = Data.progress.growth.GetRequiredExp();
     }
 
     public SaveData LoadOrCreate(int slotIndex, int saveVersion = 1, bool saveImmediatelyIfCreated = false)
@@ -83,6 +124,9 @@ public class SaveDataManager
 
     public bool Save(int slotIndex)
     {
+        if (Data == null)
+            return false;
+        
         SetCurrentSlot(slotIndex);
         
         Data.MarkSavedNowUtc();
@@ -108,7 +152,11 @@ public class SaveDataManager
         File.Delete(fullPath);
 
         if (slotIndex == CurrentSlotIndex)
+        {
             Data = null;
+            Gold.Value = 0;
+            Level.Value = 1;
+        }
 
         return true;
     }

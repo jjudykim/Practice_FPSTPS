@@ -28,7 +28,7 @@ public class MapNodeActionRouter : MonoBehaviour
             return;
         
         Managers.Instance.Game.SelectNextNodeAndMove(node.Id);
-        SceneManager.LoadScene(sceneName);
+        Managers.Instance.Scene.LoadScene(sceneName);
     }
 
     public void SetMapSeed(int seed)

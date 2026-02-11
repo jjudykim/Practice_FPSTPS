@@ -1419,6 +1419,37 @@ Transform:
   - {fileID: 6078321455654507196}
   m_Father: {fileID: 4415563717850516915}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &5557909743232624135
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2604608414903807055}
+  m_Layer: 7
+  m_Name: FloatingTextPivot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2604608414903807055
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5557909743232624135}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 6.82, z: 0.53}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 101917968409440354}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5588155993260338062
 GameObject:
   m_ObjectHideFlags: 0
@@ -2251,12 +2282,13 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -7.3}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 2.3, y: 2.3, z: 2.3}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 687649036204911420}
   - {fileID: 5215188467812513417}
   - {fileID: 5542047725969589091}
+  - {fileID: 2604608414903807055}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!95 &392295226972404413
@@ -2308,6 +2340,7 @@ MonoBehaviour:
   enemyType: 2
   target: {fileID: 7760366265928939363, guid: ac9b55493c6212846836fc1746049d96, type: 3}
   agent: {fileID: 907348409388311638}
+  floatingTextPivot: {fileID: 2604608414903807055}
   animator: {fileID: 392295226972404413}
   maxHp: 400
   curHp: 400
@@ -2332,6 +2365,11 @@ MonoBehaviour:
   elitePelletDamageMultiplier: 0.7
   eliteRandomizeSpread: 0
   elitePitchJitter: 0
+  goldPrefab: {fileID: 6272748933857337192, guid: da37354c2c4a2ff4ba196c5cba26ee2b, type: 3}
+  expPrefab: {fileID: 830776508506649245, guid: 870f6d6e7c490cb42b992aa5979de88c, type: 3}
+  minGold: 10
+  maxGold: 30
+  expReward: 50
 --- !u!195 &907348409388311638
 NavMeshAgent:
   m_ObjectHideFlags: 0

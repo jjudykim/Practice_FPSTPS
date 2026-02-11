@@ -17,6 +17,7 @@ public class AimLineController : MonoBehaviour
     [Header("Visual")]
     [SerializeField] private bool showOnlyWhenAiming = true;
     [SerializeField] private bool hideIfNoProvider = true;
+    
 
     [SerializeField] private Color hitColor = new Color(1f, 0.2f, 0.2f, 0.9f);
     [SerializeField] private Color missColor = new Color(1f, 1f, 1f, 0.6f);
@@ -48,13 +49,16 @@ public class AimLineController : MonoBehaviour
     {
         if (showOnlyWhenAiming && !isAiming)
         {
-            if (lr.enabled) lr.enabled = false;
+            if (lr.enabled) 
+                lr.enabled = false;
+            
             return;
         }
 
         if (aimProvider == null)
         {
-            if (hideIfNoProvider && lr.enabled) lr.enabled = false;
+            if (hideIfNoProvider && lr.enabled) 
+                lr.enabled = false;
             return;
         }
         
@@ -70,7 +74,9 @@ public class AimLineController : MonoBehaviour
             Transform muzzle = aimProvider.Muzzle != null ? aimProvider.Muzzle : fallbackMuzzle;
             if (muzzle == null)
             {
-                if (lr.enabled) lr.enabled = false;
+                if (lr.enabled) 
+                    lr.enabled = false;
+                
                 return;
             }
 
@@ -81,12 +87,10 @@ public class AimLineController : MonoBehaviour
             start = aimProvider.GetAimRay().origin;
         }
 
-        Vector3 end = aimPoint;
-
-        if (!lr.enabled) lr.enabled = true;
-
+        // 선 그리기
+        if (lr.enabled == false) lr.enabled = true;
         lr.SetPosition(0, start);
-        lr.SetPosition(1, end);
+        lr.SetPosition(1, aimPoint);
 
         Color c = hasHit ? hitColor : missColor;
         lr.startColor = c;
@@ -97,7 +101,7 @@ public class AimLineController : MonoBehaviour
     {
         isAiming = aiming;
 
-        if (!isAiming && lr != null)
+        if (lr != null)
             lr.enabled = false;
     }
 }

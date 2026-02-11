@@ -7,6 +7,7 @@ public class Databases : SingletonBase<Databases>
 {
     public WeaponDatabase Weapon { get; private set; }
     public BulletDatabase Bullet { get; private set; }
+    public ItemDatabase Item { get; private set; }
     
     protected override bool AllowAutoCreate => true;
     
@@ -21,6 +22,7 @@ public class Databases : SingletonBase<Databases>
 
         Weapon = new WeaponDatabase();
         Bullet = new BulletDatabase();
+        Item = new ItemDatabase();
         
         IsLoaded = false;
     }
@@ -48,6 +50,9 @@ public class Databases : SingletonBase<Databases>
             
             if (Bullet != null)
                 await Bullet.EnsureLoadedAsync();
+
+            if (Item != null)
+                await Item.EnsureLoadedAsync();
             
             IsLoaded = true;
             Debug.Log("[Databases] PreloadAllAsync completed.");

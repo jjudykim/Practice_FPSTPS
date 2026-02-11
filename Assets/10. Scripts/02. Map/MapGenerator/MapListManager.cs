@@ -27,12 +27,18 @@ public class MapListManager : MonoBehaviour
             yield break;
         }
 
-        string filePath = GetMapListPath();
+        // 1. Persistent 먼저 시도
+        string filePath = Path.Combine(Application.persistentDataPath, mapListFile);
+        
+        // 2. 없으면 StreamingAssets 시도
+        if (File.Exists(filePath) == false)
+        {
+            filePath = Path.Combine(Application.streamingAssetsPath, mapListFile);
+        }
 
         if (File.Exists(filePath) == false)
         {
             cachedList = new MapListData();
-            JsonWriter.Save(cachedList, filePath);
             onDone?.Invoke(true);
             yield break;
         }
@@ -57,7 +63,7 @@ public class MapListManager : MonoBehaviour
         bool listOk = false;
         yield return LoadMapList(ok => listOk = ok);
 
-        if (listOk == false || cachedList == null)
+        if (listOk == false || cachedList == null || cachedList.entries == null || cachedList.entries.Count == 0)
         {
             onDone?.Invoke(false, null);
             yield break;
@@ -73,10 +79,22 @@ public class MapListManager : MonoBehaviour
             yield break;
         }
 
-        var preset = JsonReader.Load<MapData>(entry.presetFile);
+        // 경로 처리 Fallback
+        string fullPath = entry.presetFile;
+        if (File.Exists(fullPath) == false)
+        {
+            // 상대경로일 경우 처리
+            fullPath = Path.Combine(Application.persistentDataPath, entry.presetFile);
+            if (File.Exists(fullPath) == false)
+            {
+                fullPath = Path.Combine(Application.streamingAssetsPath, entry.presetFile);
+            }
+        }
+
+        var preset = JsonReader.Load<MapData>(fullPath);
         if (preset == default)
         {
-            Debug.LogError("[MapListManager] Preset Load Failed");
+            Debug.LogError($"[MapListManager] Preset Load Failed: {fullPath}");
             onDone?.Invoke(false, null);
             yield return null;
         }

@@ -1,0 +1,30 @@
+{
+  "SaveVersion": 1,
+  "SavedAtUtc": "2026-01-16T22:32:52.3853784+09:00",
+  "MapId": 1,
+  "UsedSeed": 721282377,
+  "Request": {
+    "MapId": 1,
+    "Seed": 721282377,
+    "TotalDepth": 6,
+    "MinNodesPerDepth": 2,
+    "MaxNodesPerDepth": 3,
+    "MinOutDegree": 2,
+    "MaxOutDegree": 3,
+    "CrossChance": 0.25,
+    "MaxRetries": 30,
+    "RewardRatio": 0.2,
+    "ShopRatio": 0.2,
+    "RewardCoolDownDepth": 1,
+    "ShopCoolDownDepth": 1,
+    "RewardMinDepth": 2,
+    "RewardMaxDepth": 4,
+    "ShopMinDepth": 2,
+    "ShopMaxDepth": 4
+  },
+  "RewardRatio": 0.0,
+  "RewardCooldownDepth": 0,
+  "ShopRatio": 0.0,
+  "ShopCooldownDepth": 0,
+  "GeneratorVersion": 0
+}

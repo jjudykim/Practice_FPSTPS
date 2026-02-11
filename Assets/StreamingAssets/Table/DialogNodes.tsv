@@ -1,0 +1,5 @@
+Id	Speaker	Text	NextId
+Solider_START	Soldier	자네는 하얀 고양이군.. 나는 검은 고양이는 영 무서워서 말이지. 하얀 고양이는 괜찮은 편이야.	Solider_Q1
+Solider_Q1	Soldier	어때, 이제 소탕에 참가할 준비가 됐나? 결코 만만치 않을 것이네만..	
+Solider_Q1_A	Soldier	좋아, 그럼 가보자고!	
+Solider_Q1_B	Soldier	뭐, 언제든 준비만 되면 말하라고.	

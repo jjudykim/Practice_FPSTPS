@@ -3,7 +3,7 @@ using UnityEngine;
 public class EndPointTrigger : MonoBehaviour
 {
     [Header("Dependencies")]
-    [SerializeField] private CombatRoomController room;
+    [SerializeField] private RoomControllerBase room;
     [SerializeField] private GameObject visualRoot;
     
     private Collider triggerCol;
@@ -15,7 +15,7 @@ public class EndPointTrigger : MonoBehaviour
 
         // 룸 참조가 비어있으면 부모에서 찾아보기
         if (room == null)
-            room = GetComponentInParent<CombatRoomController>();
+            room = GetComponentInParent<RoomControllerBase>();
 
         if (room == null)
             Debug.LogError("[EndPointTrigger] CombatRoomController reference is missing.");
@@ -30,18 +30,16 @@ public class EndPointTrigger : MonoBehaviour
 
         if (visualRoot != null)
             visualRoot.SetActive(active);
-        
-        Debug.Log($"[EndPointTrigger] SetActive({active}) triggerCol.enabled={(triggerCol != null ? triggerCol.enabled : false)}");
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (room == null)
             return;
-        
-        if (other.gameObject != Player.Instance.gameObject)
-            return;
 
-        room.OnPlayerReachedEndPoint();
+        if (other.CompareTag("Player"))
+        {
+            room.OnPlayerReachedEndPoint();
+        }
     }
 }

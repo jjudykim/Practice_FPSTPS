@@ -21,7 +21,7 @@ public class PlayerMoveController : MonoBehaviour
     [SerializeField] private float runSpeed = 6.0f;
 
     [Header("Roll Settings (DOTWeen")] 
-    [SerializeField] private float rollDistance = 3.0f;
+    [SerializeField] private float rollDistance = 5.0f;
     [SerializeField] private float rollDuration = 0.8f;
     [SerializeField] private Ease rollEase = Ease.OutQuad;
 

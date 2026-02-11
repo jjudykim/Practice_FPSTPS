@@ -221,7 +221,7 @@ public class CombatRoomController : RoomControllerBase
     // ===========================
     // Step 4) EndPoint Trigger 시 룸 클리어
     // ===========================
-    public void OnPlayerReachedEndPoint()
+    public override void OnPlayerReachedEndPoint()
     {
         if (isFinished)
             return;

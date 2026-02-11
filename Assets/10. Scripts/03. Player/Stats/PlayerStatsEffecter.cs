@@ -1,5 +1,4 @@
 using jjudy;
-using Unity.Android.Gradle;
 using UnityEngine;
 
 public class PlayerStatsEffecter

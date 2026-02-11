@@ -28,21 +28,31 @@ public class MapPresetRepository
     public void RebuildSeedCache()
     {
         EnsureFolder();
-
         cachedSeeds.Clear();
 
-        string[] files = Directory.GetFiles(FolderPath, "*.json", SearchOption.TopDirectoryOnly);
-
-        foreach (string file in files)
+        // 1. Streaming 확인
+        string streamingDir = Path.Combine(Application.streamingAssetsPath, FolderName);
+        if (Directory.Exists(streamingDir))
         {
-            string fileName = Path.GetFileNameWithoutExtension(file);
-            
-            if (int.TryParse(fileName, out int seed))
-                cachedSeeds.Add(seed);
+            foreach (string file in Directory.GetFiles(streamingDir, "*.json"))
+            {
+                if (int.TryParse(Path.GetFileNameWithoutExtension(file), out int seed))
+                    cachedSeeds.Add(seed);
+            }
+        }
+
+        // 2. Persistent 확인 (덮어쓰기 효과)
+        if (Directory.Exists(FolderPath))
+        {
+            foreach (string file in Directory.GetFiles(FolderPath, "*.json"))
+            {
+                if (int.TryParse(Path.GetFileNameWithoutExtension(file), out int seed))
+                    cachedSeeds.Add(seed);
+            }
         }
 
         isCached = true;
-        Debug.Log($"[MapPresetRepository] ::: Seed cache rebuilt. Count={cachedSeeds.Count}");
+        Debug.Log($"[MapPresetRepository] ::: Seed cache rebuilt (Streaming+Persistent). Count={cachedSeeds.Count}");
     }
 
     public IReadOnlyCollection<int> GetSeeds()
@@ -93,32 +103,48 @@ public class MapPresetRepository
 
     public bool TryLoadPresetBySeed(int seed, out MapData data)
     {
+        // 1. Persistent 확인
         string path = GetPresetPath(seed);
-        data = JsonReader.Load<MapData>(path);
+        if (File.Exists(path))
+        {
+            data = JsonReader.Load<MapData>(path);
+            if (data != default) return true;
+        }
 
-        return data != default;
+        // 2. Streaming 확인
+        path = Path.Combine(Application.streamingAssetsPath, FolderName, $"{seed}.json");
+        if (File.Exists(path))
+        {
+            data = JsonReader.Load<MapData>(path);
+            if (data != default) return true;
+        }
+
+        data = default;
+        return false;
     }
     
     // MapList.json
     public MapListData LoadOrCreateMapList()
     {
-        if (File.Exists(MapListPath) == false)
+        // 1. Persistent 확인
+        if (File.Exists(MapListPath))
         {
-            var created = new MapListData();
-            JsonWriter.Save(created, MapListPath);
-            
-            return created;
-        }
-        
-        var loaded = JsonReader.Load<MapListData>(MapListPath);
-        if (loaded == default || loaded.entries == null)
-        {
-            var created = new MapListData();
-            JsonWriter.Save(created, MapListPath);
-            return created;
+            var loaded = JsonReader.Load<MapListData>(MapListPath);
+            if (loaded != default && loaded.entries != null) return loaded;
         }
 
-        return loaded;
+        // 2. Streaming 확인
+        string sPath = Path.Combine(Application.streamingAssetsPath, MapListFileName);
+        if (File.Exists(sPath))
+        {
+            var loaded = JsonReader.Load<MapListData>(sPath);
+            if (loaded != default && loaded.entries != null) return loaded;
+        }
+        
+        // 3. 새로 생성
+        var created = new MapListData();
+        JsonWriter.Save(created, MapListPath);
+        return created;
     }
 
     public void UpsertMapListEntry(string key, string presetPath)

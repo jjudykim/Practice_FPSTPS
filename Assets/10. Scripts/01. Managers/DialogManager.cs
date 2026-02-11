@@ -102,7 +102,7 @@ public class DialogManager : MonoBehaviour
             return;
         }
         
-        SceneManager.LoadScene(npc.NextSceneName);
+        Managers.Instance.Scene.LoadScene(npc.NextSceneName);
     }
     
     private void ApplyDialogCursorPolicy()

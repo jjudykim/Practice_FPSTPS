@@ -20,7 +20,7 @@ public class EnemyDeadState : IEnemyState
             var anim = owner.GetComponent<Animator>();
             anim.ResetTrigger("Attack");
             anim.ResetTrigger("Damage");
-            anim.ResetTrigger("Chase");
+            anim.SetBool("IsChasing", false);
             anim.SetFloat("Speed", 0f);
         }
         owner.AnimTriggerDead();

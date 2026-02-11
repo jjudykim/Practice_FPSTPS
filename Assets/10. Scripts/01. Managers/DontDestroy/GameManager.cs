@@ -5,17 +5,49 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 
+public enum GameState
+{
+    Ready,
+    Playing,
+    GameOver,
+    GameClear
+}
+
 public class GameManager
 {
+    public GameState CurrentState { get; private set; } = GameState.Ready;
+    public event Action<GameState> OnStateChanged;
+    
+    private GameResultUI gameResultUI;
+
+    public void GameOver() => Managers.Instance.StartCoroutine(CoHandleGameFinish(GameState.GameOver));
+    public void GameClear() => Managers.Instance.StartCoroutine(CoHandleGameFinish(GameState.GameClear));
+    
     public MapRunCache MapCache { get; private set; } = new MapRunCache();
     public bool HasActiveMap => MapCache != null && MapCache.HasGraph;
     
     private readonly string mapSceneName = "MapScene";
-    
+
+    public void Init()
+    {
+        var prefab = Resources.Load<GameObject>("Prefabs/UI/GameResultUI");
+        if (prefab != null)
+        {
+            var go = UnityEngine.Object.Instantiate(prefab, Managers.Instance.transform);
+            gameResultUI = go.GetComponent<GameResultUI>();
+        }
+    }
+
     public void Awake()
     {
         if (MapCache == null)
             MapCache = new MapRunCache();
+    }
+
+    public void StartGame()
+    {
+        CurrentState = GameState.Playing;
+        OnStateChanged?.Invoke(CurrentState);
     }
 
     public void SetCurrentMap(MapGraph graph, int usedSeed, int startNodeId = -1)
@@ -66,7 +98,7 @@ public class GameManager
             if (string.IsNullOrEmpty(mapSceneName))
                 return;
         
-            SceneManager.LoadScene(mapSceneName);
+            Managers.Instance.Scene.LoadScene(mapSceneName);
             
             // 보상/업적/해금 트리거는 "런 결과 파이프라인"에서 처리 (여기서 하거나 별도 시스템으로 위임)
             // TODO: ApplyRoomRewards(result);
@@ -87,9 +119,45 @@ public class GameManager
             // 중단 처리
             return;
         }
-        
-        
+    }
+    
+    private IEnumerator CoHandleGameFinish(GameState targetState)
+    {
+        if (CurrentState == GameState.GameOver || CurrentState == GameState.GameClear)
+            yield break;
 
+        CurrentState = targetState;
         
+        yield return new WaitForSeconds(2.0f);
+        
+        OnStateChanged?.Invoke(CurrentState);
+        
+        if (Managers.Instance.Scene != null)
+        {
+            yield return Managers.Instance.StartCoroutine(Managers.Instance.Scene.CoFadeOut(1.0f));
+        }
+    }
+
+    public void ResetToDefault()
+    {
+        Time.timeScale = 1;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        if (Player.Instance != null)
+        {
+            Player.Instance.ResetForTown();
+        }
+
+        if (GlobalHUDUI.Instance != null)
+        {
+            GlobalHUDUI.Instance.RefreshAll();
+        }
+    }
+
+    public void ResetGameSession()
+    {
+        CurrentState = GameState.Ready;
     }
 }
