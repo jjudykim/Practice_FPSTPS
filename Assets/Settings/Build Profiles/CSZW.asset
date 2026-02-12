@@ -890,7 +890,7 @@ MonoBehaviour:
     - line: '|     PS4: DOTWEEN'
     - line: '|     PS5: DOTWEEN'
     - line: '|     QNX: DOTWEEN'
-    - line: '|     Standalone: DOTWEEN'
+    - line: '|     Standalone: DOTWEEN;APP_UI_EDITOR_ONLY'
     - line: '|     VisionOS: DOTWEEN'
     - line: '|     WebGL: DOTWEEN'
     - line: '|     Windows Store Apps: DOTWEEN'

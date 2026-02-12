@@ -16,6 +16,7 @@ public enum GameState
 public class GameManager
 {
     public GameState CurrentState { get; private set; } = GameState.Ready;
+    public SessionContext Session { get; private set; } = new SessionContext();
     public event Action<GameState> OnStateChanged;
     private MapPresetRepository mapRepo = new MapPresetRepository();
     private GameResultUI gameResultUI;
@@ -110,10 +111,11 @@ public class GameManager
         {
             Debug.Log($"[GameManager] Room Cleared. nodeId={result.NodeId}, time={result.ClearTime}, kills={result.KillCount}");
             
-            // TODO: OpenMapUI();
+            Session.AddKill();
+            
             if (string.IsNullOrEmpty(mapSceneName))
                 return;
-        
+            
             Managers.Instance.Scene.LoadScene(mapSceneName);
             
             // 보상/업적/해금 트리거는 "런 결과 파이프라인"에서 처리 (여기서 하거나 별도 시스템으로 위임)
@@ -126,6 +128,7 @@ public class GameManager
         {
             Debug.Log($"[GameManager] Room ended as {result.Type}. End Run. nodeId={result.NodeId}");
             // TODO: 런 종료(귀환/사망) 처리, 보상/패널티, Base로 복귀 등
+            Session.Inventory.Clear();
             return;
         }
         
@@ -133,10 +136,19 @@ public class GameManager
         {
             Debug.Log($"[GameManager] Room Aborted. nodeId={result.NodeId}");
             // 중단 처리
+            Session.Inventory.Clear();
             return;
         }
     }
-    
+
+    public void FinalizeSessionSuccess()
+    {
+        var storage = Managers.Instance.SaveData.Data.progress.inventory;
+        Session.Inventory.TransferToStorage(storage);
+
+        Managers.Instance.SaveData.Save();
+    }
+
     private IEnumerator CoHandleGameFinish(GameState targetState)
     {
         if (CurrentState == GameState.GameOver || CurrentState == GameState.GameClear)
