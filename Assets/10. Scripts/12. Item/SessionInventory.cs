@@ -5,21 +5,32 @@ using UnityEngine;
 
 public class SessionInventory : IInventory
 {
-    private List<ItemStack> items = new();
+    private ItemStack[] items;
 
-    public int MaxSlots { get; private set; }
+    public int MaxSlots => items?.Length ?? 0;
     public float MaxWeight { get; private set; }
 
+    public InventoryType Type => InventoryType.InGame;
     public IReadOnlyList<ItemStack> Items => items;
     
+    
     public event Action OnInventoryChanged;
+    public event Action<int> OnSlotChanged;
     public float CurrentWeight => items.Sum(x => x.Data != null ? x.Data.Weight * x.amount : 0f);
 
-    public int CurrentSlotCount => items.Count;
-    
+    public int CurrentSlotCount => items.Count(x => x != null);
+
+
     public void SetupBackpack(int slots, float weightLimit)
     {
-        MaxSlots = slots;
+        var newItems = new ItemStack[slots];
+        if (items != null)
+        {
+            int minSize = Mathf.Min(items.Length, slots);
+            Array.Copy(items, newItems, minSize);
+        }
+
+        items = newItems;
         MaxWeight = weightLimit;
         OnInventoryChanged?.Invoke();
     }
@@ -39,56 +50,88 @@ public class SessionInventory : IInventory
             Debug.LogWarning("무게 초과로 아이템을 주울 수 없음");
             return false;
         }
-
-        foreach (var stack in items.Where(x => x.itemId == itemId && !x.IsFull))
+        
+        // 1. 기존에 겹칠 수 있는 스택이 있는지 먼저 확인
+        for (int i = 0; i < items.Length; ++i)
         {
-            int canAdd = itemData.StackLimit - stack.amount;
-            int toAdd = Mathf.Min(canAdd, amount);
+            if (items[i] != null && items[i].itemId == itemId && items[i].IsFull == false)
+            {
+                int canAdd = itemData.StackLimit - items[i].amount;
+                int toAdd = Mathf.Min(canAdd, amount);
+                
+                items[i].amount += toAdd;
+                amount -= toAdd;
+                OnSlotChanged?.Invoke(i);
 
-            stack.amount += toAdd;
-            amount -= toAdd;
-
-            if (amount <= 0)
-                break;
+                if (amount <= 0)
+                    break;
+            }
+        }
+        
+        // 2. 남은 수량이 있다면 빈 슬롯에 추가
+        if (amount > 0)
+        {
+            for (int i = 0; i < items.Length; ++i)
+            {
+                if (items[i] == null)
+                {
+                    int toAdd = Mathf.Min(amount, itemData.StackLimit);
+                    items[i] = new ItemStack(itemId, toAdd);
+                    amount -= toAdd;
+                    OnSlotChanged?.Invoke(i);
+                
+                    if (amount <= 0)
+                        break;
+                }
+            }
         }
 
-        while (amount > 0)
+        if (amount > 0)
         {
-            if (items.Count >= MaxSlots)
-            {
-                Debug.LogWarning("[SessionInventory] ::: 슬롯 부족 : 가방이 가득 찼습니다.");
-                OnInventoryChanged?.Invoke();
-                return false;
-            }
-
-            int toAdd = Mathf.Min(amount, itemData.StackLimit);
-            items.Add(new ItemStack(itemId, toAdd));
-            amount -= toAdd;
+            Debug.LogWarning("[SessionInventory] ::: 슬롯 부족");
+            OnInventoryChanged?.Invoke();
+            return false;
         }
         
         OnInventoryChanged?.Invoke();
         return true;
     }
 
+    public void SetItemAt(int index, ItemStack stack)
+    {
+        if (index < 0 || index >= items.Length)
+            return;
+
+        items[index] = stack;
+        OnSlotChanged?.Invoke(index);
+        OnInventoryChanged?.Invoke();
+    }
+
+    public ItemStack GetItemAt(int index)
+    {
+        if (index < 0 || index >= items.Length)
+            return null;
+
+        return items[index];
+    }
+
     public bool TryRemoveItem(string itemId, int amount)
     {
-        if (string.IsNullOrEmpty(itemId) || amount <= 0)
-            return true;
-
         if (GetTotalCount(itemId) < amount)
             return false;
 
-        for (int i = items.Count - 1; i >= 0; i--)
+        for (int i = items.Length - 1; i >= 0; i--)
         {
-            if (items[i].itemId == itemId)
+            if (items[i] != null && items[i].itemId == itemId)
             {
                 int toRemove = Mathf.Min(items[i].amount, amount);
                 items[i].amount -= toRemove;
                 amount -= toRemove;
-                
-                if (items[i].amount <= 0)
-                    items.RemoveAt(i);
 
+                if (items[i].amount <= 0)
+                    items[i] = null;
+
+                OnSlotChanged?.Invoke(i);
                 if (amount <= 0)
                     break;
             }
@@ -100,19 +143,26 @@ public class SessionInventory : IInventory
 
     public void Clear()
     {
-        items.Clear();
+        Array.Clear(items, 0, items.Length);
         OnInventoryChanged?.Invoke();
     }
 
-    public int GetTotalCount(string itemId) => items.Where(x => x.itemId == itemId).Sum(x => x.amount);
+    public int GetTotalCount(string itemId) => items.Where(x => x != null && x.itemId == itemId).Sum(x => x.amount);
 
-    public void TransferToStorage(StorageInventory storage)
+    public void TransferToStorage(IInventory storage)
     {
-        foreach (var stack in items)
+        for (int i = 0; i < items.Length; ++i)
         {
-            storage.AddItem(stack.itemId, stack.amount);
+            if (items[i] != null)
+            {
+                if (storage.AddItem(items[i].itemId, items[i].amount))
+                {
+                    items[i] = null;
+                    OnSlotChanged?.Invoke(i);
+                }
+            }
         }
 
-        Clear();
+        OnInventoryChanged?.Invoke();
     }
 }

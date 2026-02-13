@@ -144,7 +144,7 @@ public class GameManager
     public void FinalizeSessionSuccess()
     {
         var storage = Managers.Instance.SaveData.Data.progress.inventory;
-        Session.Inventory.TransferToStorage(storage);
+        //Session.Inventory(storage);
 
         Managers.Instance.SaveData.Save();
     }

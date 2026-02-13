@@ -9,8 +9,10 @@ public class StorageInventory : IInventory
     [SerializeField] private int maxSlots = 20;
     [SerializeField] private List<ItemStack> items = new();
     [SerializeField] private List<string> equippedItemIds = new();
-    
+
+    public InventoryType Type { get; }
     public IReadOnlyList<ItemStack> Items => items;
+    public int MaxSlots { get; }
     public event Action OnInventoryChanged;
 
     public static StorageInventory CreateNew() => new() { maxSlots = 20 };
@@ -49,6 +51,16 @@ public class StorageInventory : IInventory
 
         OnInventoryChanged?.Invoke();
         return true;
+    }
+
+    public void SetItemAt(int index, ItemStack stack)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ItemStack GetItemAt(int index)
+    {
+        throw new NotImplementedException();
     }
 
     public bool TryRemoveItem(string itemId, int amount)
