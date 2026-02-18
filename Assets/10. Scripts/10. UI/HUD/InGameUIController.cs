@@ -2,7 +2,7 @@ using System;
 using Michsky.MUIP;
 using UnityEngine;
 
-public class InGameUIIntializer : MonoBehaviour
+public class InGameUIController : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private PlayerCombatController player;
@@ -14,6 +14,9 @@ public class InGameUIIntializer : MonoBehaviour
     [SerializeField] private PlayerUIModeSwitcher modeSwitcher;
     [SerializeField] private CrosshairUI crosshairUI;
 
+    [Header("Inventory UI")]
+    [SerializeField] private InGameInventoryUI inventoryUI;
+    
     private void Awake()
     {
         var playerObj = Player.Instance;
@@ -27,11 +30,47 @@ public class InGameUIIntializer : MonoBehaviour
     private void Start()
     {
         ApplyBinding();
+        InitializeInventory();
+    }
+    
+    private void Update()
+    {
+        if (Managers.Instance != null && Managers.Instance.Input.Inventory)
+        {
+            ToggleInventory();
+        }
+    }
+    
+    private void InitializeInventory()
+    {
+        if (inventoryUI != null && Managers.Instance != null)
+        {
+            inventoryUI.Initialize(Managers.Instance.Game.Session.Inventory);
+            inventoryUI.gameObject.SetActive(false);
+        }
     }
 
-    private void OnEnable()
+    private void ToggleInventory()
     {
-        ApplyBinding();
+        if (inventoryUI == null)
+            return;
+        
+        bool isActive = !inventoryUI.gameObject.activeSelf;
+        inventoryUI.gameObject.SetActive(isActive);
+
+        if (isActive)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            Managers.Instance.Input.GamePlayInputEnable = false;
+            inventoryUI.RefreshUI();
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            Managers.Instance.Input.GamePlayInputEnable = true;
+        }
     }
 
     private void ApplyBinding()
@@ -58,7 +97,7 @@ public class InGameUIIntializer : MonoBehaviour
                 if (hpUIBinder != null) hpUIBinder.SetHPBar(hpBar);
             }
    
-            Debug.Log("[InGameUIIntializer] ::: 모든 UI 바인딩 완료");
+            Debug.Log("[InGameUIController] ::: 모든 UI 바인딩 완료");
         }  
     } 
 }

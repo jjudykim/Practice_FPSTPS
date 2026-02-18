@@ -1,8 +1,16 @@
+using TMPro;
+using Unity.Android.Gradle.Manifest;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class ItemSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
 {
+    [Header("UI Visuals")]
+    [SerializeField] private Image iconImage;
+    [SerializeField] private TextMeshProUGUI amountText;
+    [SerializeField] private GameObject amountContainer;    // 수량 1개일 경우 수량 숨김 처리
+    
     private IInventory linkedInventory;
     private int slotIndex;
     private CursorSlot globalCursor;
@@ -14,6 +22,41 @@ public class ItemSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     private void Awake()
     {
         rectTransform = GetComponent<RectTransform>();
+    }
+
+    public void SetData(ItemStack stack)
+    {
+        if (stack == null || stack.Data == null)
+        {
+            ClearSlot();
+            return;
+        }
+
+        if (iconImage != null)
+        {
+            iconImage.sprite = stack.Data.Icon;
+            iconImage.enabled = true;
+        }
+
+        if (amountText != null)
+        {
+            amountText.text = stack.amount.ToString();
+            
+            if (amountContainer != null)
+                amountContainer.SetActive(stack.amount > 1);
+        }
+    }
+
+    private void ClearSlot()
+    {
+        if (iconImage != null)
+        {
+            iconImage.sprite = null;
+            iconImage.enabled = false;
+        }
+        
+        if (amountContainer != null)
+            amountContainer.SetActive(false);
     }
 
     public void Setup(IInventory inventory, int index, CursorSlot cursor)
