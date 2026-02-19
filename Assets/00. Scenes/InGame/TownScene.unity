@@ -11307,7 +11307,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e25a00f9ff5462eb09db0e32c3e1cb4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DialogManager
-  dialogPrefab: {fileID: 1678620624656900996, guid: f7fcf9e223a9c114b8347dbfa5e4f250, type: 3}
+  defaultDialogPrefab: {fileID: 0}
   dialogRoot: {fileID: 1329110789}
 --- !u!4 &1744151074
 Transform:
@@ -12630,6 +12630,14 @@ PrefabInstance:
     - target: {fileID: 4064254660068602223, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
       propertyPath: interactDistance
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4064254660068602223, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+      propertyPath: customDialogPrefab
+      value: 
+      objectReference: {fileID: 1678620624656900996, guid: e9d2dba442c726f40a865626fca2787f, type: 3}
+    - target: {fileID: 4064254660068602223, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+      propertyPath: loadSceneOnDialogFinish
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

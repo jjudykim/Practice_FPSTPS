@@ -341,7 +341,9 @@ public class MapUIController :  MonoBehaviour
         if (cache.CurrentNodeId < 0)
         {
             int startId = FindStartNodeId(cache.CurrentGraph);
-            if (id != startId)
+            if (id == startId)
+                Managers.Instance.Game.SelectNextNodeAndMove(id);
+            else
                 return;
         }
         else

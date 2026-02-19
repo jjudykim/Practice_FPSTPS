@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -40,9 +41,12 @@ public class GameResultUI : MonoBehaviour
         
         if (state == GameState.GameOver)
             overPanel.SetActive(true);
-        
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+
+        if (state == GameState.GameClear || state == GameState.GameOver)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
     }
 
     private void OnExitToTown()
@@ -50,7 +54,14 @@ public class GameResultUI : MonoBehaviour
         if (isTransitioning)
             return;
 
+        StartCoroutine(CoExitToTown());
+    }
+
+    private IEnumerator CoExitToTown()
+    {
         isTransitioning = true;
+
+        yield return StartCoroutine(Managers.Instance.Scene.CoFadeOut(0.5f));
         
         if (Managers.Instance.SaveData != null)
         {
@@ -58,9 +69,8 @@ public class GameResultUI : MonoBehaviour
             Debug.Log($"[GameResult] 세이브 데이터 저장 완료 (Slot: {Managers.Instance.SaveData.CurrentSlotIndex})");
         }
         
-        clearPanel.SetActive(false);
-        overPanel.SetActive(false);
         Managers.Instance.Game.ResetGameSession();
+        Managers.Instance.Game.ResetToDefault();
 
         if (Player.Instance != null)
         {
@@ -71,14 +81,11 @@ public class GameResultUI : MonoBehaviour
             Player.Instance.ResetForTown();
         }
 
-        if (CameraController.Instance != null)
-        {
-            CameraController.Instance.SetMode(CameraController.CameraMode.FirstPerson);
-        }
-        
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        clearPanel.SetActive(false);
+        overPanel.SetActive(false);
 
         Managers.Instance.Scene.LoadScene("TownScene");
+
+        isTransitioning = false;
     }
 }

@@ -58,14 +58,15 @@ public class DialogController : MonoBehaviour
     // ===========================
     // 런타임 캐시
     // ===========================
-    private Dictionary<string, DialogNodeRow> nodeById;
-    private Dictionary<string, List<DialogChoiceRow>> choicesByFromId;
+    protected Dictionary<string, DialogNodeRow> nodeById;
+    protected Dictionary<string, List<DialogChoiceRow>> choicesByFromId;
 
-    private Coroutine playCoroutine;
-    private bool isTyping;
-    private bool requestSkipTyping;
+    protected Coroutine playCoroutine;
+    protected bool isTyping;
+    protected bool requestSkipTyping;
+    protected string currentNodeId;
 
-    private void Awake()
+    protected virtual void Awake()
     {
         LoadAllData();
         ClearChoices();
@@ -74,15 +75,10 @@ public class DialogController : MonoBehaviour
     private void Update()
     {
         if (skipTypingOnClick && Input.GetMouseButtonDown(0))
-        {
             requestSkipTyping = true;
-        }
-
-        // (선택) ESC로 닫기
+        
         if (Input.GetKeyDown(KeyCode.Escape))
-        {
             CloseSelf();
-        }
     }
 
     // ===========================
@@ -101,50 +97,42 @@ public class DialogController : MonoBehaviour
     // ===========================
     // 데이터 로딩
     // ===========================
+
+    private string GetTablePath(string fileName)
+    {
+        string path = Path.Combine(Application.persistentDataPath, "Table", fileName);
+        return File.Exists(path) ? path : Path.Combine(Application.streamingAssetsPath, "Table", fileName);
+    }
+
     private void LoadAllData()
     {
         // Nodes
-        string nodesPath = Path.Combine(Application.persistentDataPath, "Table", nodesFileName);
-        if (File.Exists(nodesPath) == false)
-        {
-            nodesPath = Path.Combine(Application.streamingAssetsPath, "Table", nodesFileName);
-        }
+        string nodesPath = GetTablePath(nodesFileName);
         List<DialogNodeRow> nodes = TSVReader.ReadTable<DialogNodeRow>(nodesPath);
-
         nodeById = new Dictionary<string, DialogNodeRow>(StringComparer.Ordinal);
         if (nodes != null)
         {
-            for (int i = 0; i < nodes.Count; i++)
+            foreach (var row in nodes)
             {
-                DialogNodeRow row = nodes[i];
-                if (string.IsNullOrWhiteSpace(row.Id)) continue;
-                if (nodeById.ContainsKey(row.Id)) continue;
-                nodeById.Add(row.Id, row);
+                if (string.IsNullOrWhiteSpace(row.Id) == false)
+                    nodeById[row.Id] = row;
             }
         }
 
         // Choices
-        string choicesPath = Path.Combine(Application.persistentDataPath, "Table", choicesFileName);
-        if (File.Exists(choicesPath) == false)
-        {
-            choicesPath = Path.Combine(Application.streamingAssetsPath, "Table", choicesFileName);
-        }
+        string choicesPath = GetTablePath(choicesFileName);
         List<DialogChoiceRow> choices = TSVReader.ReadTable<DialogChoiceRow>(choicesPath);
-
         choicesByFromId = new Dictionary<string, List<DialogChoiceRow>>(StringComparer.Ordinal);
         if (choices != null)
         {
-            for (int i = 0; i < choices.Count; i++)
+            foreach (var c in choices)
             {
-                DialogChoiceRow c = choices[i];
-                if (string.IsNullOrWhiteSpace(c.FromId)) continue;
-
-                if (choicesByFromId.TryGetValue(c.FromId, out List<DialogChoiceRow> list) == false)
-                {
-                    list = new List<DialogChoiceRow>();
-                    choicesByFromId.Add(c.FromId, list);
-                }
-                list.Add(c);
+                if (string.IsNullOrWhiteSpace(c.FromId))
+                    continue;
+                
+                if (choicesByFromId.ContainsKey(c.FromId) == false)
+                    choicesByFromId[c.FromId] = new List<DialogChoiceRow>();
+                choicesByFromId[c.FromId].Add(c);
             }
         }
 
@@ -156,50 +144,54 @@ public class DialogController : MonoBehaviour
     // ===========================
     private IEnumerator CoPlay(string startId)
     {
-        string currentId = startId;
+        currentNodeId = startId;
 
-        while (string.IsNullOrWhiteSpace(currentId) == false)
+        while (string.IsNullOrWhiteSpace(currentNodeId) == false)
         {
-            if (nodeById.TryGetValue(currentId, out DialogNodeRow node) == false)
+            if (nodeById.TryGetValue(currentNodeId, out DialogNodeRow node) == false)
             {
-                Debug.LogError($"[DialogController] Node not found: {currentId}");
+                Debug.LogError($"[DialogController] Node not found: {currentNodeId}");
                 yield break;
             }
 
+            // Hook : 노드가 시작될 때 파생 클래스에서 처리 가능하도록
+            OnNodeStarted(currentNodeId);
+            
             // 1) UI 반영
             if (speakerText != null)
                 speakerText.SetText(node.Speaker);
 
             // 2) 대사 타자 출력
             yield return StartCoroutine(CoTypeText(node.Text));
-
             yield return StartCoroutine(CoWaitInput());
 
             // 3) 선택지 노드인지 검사
-            if (choicesByFromId.TryGetValue(currentId, out List<DialogChoiceRow> choiceList) 
+            if (choicesByFromId.TryGetValue(currentNodeId, out List<DialogChoiceRow> choiceList) 
                 && choiceList != null 
                 && choiceList.Count > 0)
             {
-                // 선택지 띄우고, 선택될 때까지 대기
-                yield return StartCoroutine(CoWaitChoice(choiceList, nextId =>
-                {
-                    currentId = nextId;
-                }));
+                string nextPickedId = null;
+                yield return StartCoroutine(CoWaitChoice(choiceList, nextId => nextPickedId = nextId));
+                
+                OnChoicePicked(currentNodeId, nextPickedId);
 
                 // 선택 후 다음 루프로 진행
+                currentNodeId = nextPickedId;
                 continue;
             }
 
             // 4) 자동 NextId가 있으면 진행
-            if (!string.IsNullOrWhiteSpace(node.NextId))
+            if (string.IsNullOrWhiteSpace(node.NextId) == false)
             {
-                currentId = node.NextId;
+                currentNodeId = node.NextId;
                 continue;
             }
 
             // 5) NextId도 없고 선택지도 없으면 종료
             break;
         }
+        
+        OnDialogFinished();
 
         if (autoCloseOnFinish)
         {
@@ -212,13 +204,15 @@ public class DialogController : MonoBehaviour
         Debug.Log("[DialogController] Dialog finished. (autoCloseOff)");
     }
 
+    protected virtual void OnNodeStarted(string nodeId) {}
+    protected virtual void OnChoicePicked(string fromNodeId, string pickedNextId) { }
+    protected virtual void OnDialogFinished() { }
+
     private IEnumerator CoWaitInput()
     {
         requestSkipTyping = false;
         yield return null;
         yield return new WaitUntil(() => requestSkipTyping);
-
-        requestSkipTyping = false;
     }
 
     // ===========================
@@ -235,7 +229,7 @@ public class DialogController : MonoBehaviour
         contentText.SetText(text);
         contentText.maxVisibleCharacters = 0;
 
-        int length = string.IsNullOrEmpty(text) ? 0 : text.Length;
+        int length = text?.Length ?? 0;
 
         for (int i = 0; i < length; i++)
         {
@@ -275,22 +269,19 @@ public class DialogController : MonoBehaviour
             if (label != null)
                 label.SetText(c.ChoiceText);
 
-            int capturedIndex = i; // 클로저 캡쳐 안전
+            int capturedIndex = i;
             btn.onClick.AddListener(() =>
             {
-                // 타자 출력 중 클릭했을 때는 "스킵"으로만 처리하고 싶다면 여기서 분기 가능
                 pickedNextId = choiceList[capturedIndex].NextId;
                 picked = true;
             });
         }
-
-        // 선택될 때까지 대기
+        
         while (!picked)
             yield return null;
 
         ClearChoices();
-
-        // 다음 노드 지정
+        
         onPicked?.Invoke(pickedNextId);
     }
 

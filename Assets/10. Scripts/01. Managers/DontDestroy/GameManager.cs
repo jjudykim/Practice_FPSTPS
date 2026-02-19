@@ -67,7 +67,7 @@ public class GameManager
                 var graph = MapGraphGenerator.GenerateFromData(data);
                 if (graph != null)
                 {
-                    SetCurrentMap(graph, selectedSeed, graph.StartNode.Id);
+                    SetCurrentMap(graph, selectedSeed);
                     return true;
                 }
             }
@@ -153,16 +153,20 @@ public class GameManager
     {
         if (CurrentState == GameState.GameOver || CurrentState == GameState.GameClear)
             yield break;
-
-        CurrentState = targetState;
         
         yield return new WaitForSeconds(2.0f);
-        
+
+        if (Managers.Instance.Scene != null)
+        {
+            yield return Managers.Instance.StartCoroutine(Managers.Instance.Scene.CoFadeOut(1.0f));
+        }
+
+        CurrentState = targetState;
         OnStateChanged?.Invoke(CurrentState);
         
         if (Managers.Instance.Scene != null)
         {
-            yield return Managers.Instance.StartCoroutine(Managers.Instance.Scene.CoFadeOut(1.0f));
+            yield return Managers.Instance.StartCoroutine(Managers.Instance.Scene.CoFadeIn(1.0f));
         }
     }
 

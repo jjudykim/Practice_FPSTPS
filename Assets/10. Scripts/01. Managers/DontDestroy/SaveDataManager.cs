@@ -11,7 +11,7 @@ public class SaveDataManager
     [SerializeField] private string saveFolderName = DefaultSaveFolderName;
     [SerializeField] private string baseFileNameWithoutExt = DefaultBaseFileName;
 
-    public int CurrentSlotIndex { get; private set; } = 0;
+    public int CurrentSlotIndex { get; private set; } = -1;
     public SaveData Data { get; private set; }
     
     public ObservableIntValue Gold { get; } = new ObservableIntValue();

@@ -9,11 +9,10 @@ public class DialogManager : MonoBehaviour
     public event Action<bool> OnDialogOpenChanged;
     
     [Header("Dialog Prefab")]
-    [SerializeField] private GameObject dialogPrefab;
+    [SerializeField] private GameObject defaultDialogPrefab;
     [SerializeField] private Transform dialogRoot;
 
     private DialogController activeDialog;
-    private NpcDialogInteractable activeNpcContext;
     
     public bool IsOpen => activeDialog != null;
 
@@ -37,8 +36,7 @@ public class DialogManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        RestoreCursorPolicy();
     }
 
     public void Open(NpcDialogInteractable npc, string startNodeId)
@@ -46,24 +44,23 @@ public class DialogManager : MonoBehaviour
         if (IsOpen)
             return;
 
-        if (dialogPrefab == null)
+        GameObject targetPrefab = (npc.CustomDialogPrefab != null) ? npc.CustomDialogPrefab : defaultDialogPrefab;
+        
+        if (targetPrefab == null)
         {
             Debug.LogError("[DialogManager] dialogPrefab is null.");
             return;
         }
-        activeNpcContext = npc;
         
         ApplyDialogCursorPolicy();
         
-        GameObject go = Instantiate(dialogPrefab, dialogRoot);
+        GameObject go = Instantiate(targetPrefab, dialogRoot);
         activeDialog = go.GetComponent<DialogController>();
 
         if (activeDialog == null)
         {
             Debug.LogError("[DialogManager] dialogPrefab has no DialogController component.");
             Destroy(go);
-            activeNpcContext = null;
-            
             RestoreCursorPolicy();
             return;
         }
@@ -81,28 +78,7 @@ public class DialogManager : MonoBehaviour
         activeDialog = null;
         
         OnDialogOpenChanged?.Invoke(false);
-        
         RestoreCursorPolicy();
-        
-        HandleDialogFinished(activeNpcContext);
-        activeNpcContext = null;
-    }
-
-    private void HandleDialogFinished(NpcDialogInteractable npc)
-    {
-        if (npc == null)
-            return;
-
-        if (npc.LoadSceneOnDialogFinish == false)
-            return;
-
-        if (string.IsNullOrWhiteSpace(npc.NextSceneName))
-        {
-            Debug.LogWarning("[DialogManager] NextSceneName is empty. Cannot load scene.");
-            return;
-        }
-        
-        Managers.Instance.Scene.LoadScene(npc.NextSceneName);
     }
     
     private void ApplyDialogCursorPolicy()
@@ -121,7 +97,7 @@ public class DialogManager : MonoBehaviour
 
     private void RestoreCursorPolicy()
     {
-        if (!cursorOverrideApplied)
+        if (cursorOverrideApplied == false)
             return;
 
         Cursor.lockState = prevLockMode;

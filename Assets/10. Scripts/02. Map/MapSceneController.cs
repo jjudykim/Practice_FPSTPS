@@ -52,9 +52,10 @@ public class MapSceneController : MonoBehaviour
         if (applyProgressOnOpen)
         {
             mapUI.ApplyProgress(cache,  MapUIController.MapUIMode.Interactive);
-        
-            if (cache.CurrentNodeId < 0) 
-                cache.TrySetCurrentNodeToStartIfNeeded();
+
+            int snapTargetId = cache.CurrentNodeId;
+            if (snapTargetId < 0 && cache.CurrentGraph.StartNode != null)
+                snapTargetId = cache.CurrentGraph.StartNode.Id;
             
             if (cache.CurrentNodeId >= 0)
                 mapUI.SnapToNode(cache.CurrentNodeId);
